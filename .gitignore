@@ -10,3 +10,4 @@ private/
 *.private.jsonl
 *.sqlite
 *.db
+research/source-repos/
