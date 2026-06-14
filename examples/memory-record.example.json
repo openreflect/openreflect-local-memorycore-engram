@@ -1,0 +1,12 @@
+{
+  "record_id": "record_demo_decision_001",
+  "record_type": "decision",
+  "summary": "Attach durable version pointers to memory records before indexing them semantically.",
+  "provenance": {
+    "source_kind": "commit",
+    "version_pointer": "0000000000000000000000000000000000000000",
+    "path_hint": "docs/example-source.md"
+  },
+  "semantic_tags": ["provenance", "memory-core", "semantic-recall"],
+  "confidence": 0.94
+}

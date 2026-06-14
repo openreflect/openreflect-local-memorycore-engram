@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Engram Memory Record",
+  "type": "object",
+  "required": ["record_id", "record_type", "summary", "provenance", "confidence"],
+  "properties": {
+    "record_id": {
+      "type": "string",
+      "pattern": "^record_[a-z0-9_:-]+$"
+    },
+    "record_type": {
+      "type": "string",
+      "enum": ["decision", "observation", "reflection", "source_note", "repair"]
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["source_kind", "version_pointer"],
+      "properties": {
+        "source_kind": {
+          "type": "string",
+          "enum": ["commit", "file", "diff", "tag", "external"]
+        },
+        "version_pointer": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path_hint": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "semantic_tags": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    }
+  },
+  "additionalProperties": false
+}
