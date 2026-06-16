@@ -84,6 +84,84 @@ Candidate controls:
 - Trigger compaction/maintenance where the backend supports it.
 - Put a backend into observe-only mode.
 
+### Out-Of-The-Box Integrations And Endpoints
+
+MemoryCore should ship with useful integration surfaces rather than expecting
+every client or agent system to build a custom adapter.
+
+These integrations fall into two categories:
+
+1. Clients and runtimes that call MemoryCore.
+2. Memory substrates that MemoryCore can route to, mirror, split, index, back
+   up, migrate, or verify.
+
+Candidate client/runtime integrations:
+
+- OpenClaw.
+- Hermes.
+- Pi-Agent.
+- Codex.
+- ChatGPT.
+- Claude Desktop.
+- MCP clients.
+- REST API clients.
+- OpenAI plugins/apps.
+- Claude plugins/apps.
+- Miniapps.
+
+Candidate protocol and storage endpoints:
+
+- REST API.
+- MCP.
+- Embeddings/vector-store style APIs, including Pinecone-like interfaces.
+- Filesystem-style mounts, eventually including NFS and CIFS.
+- Object stores such as S3.
+
+The v0.1 surface should stay narrow enough to prove the control-plane model.
+MCP and CLI are likely first because agent clients can use them immediately.
+REST and Pinecone-style APIs are strategically important because they let
+existing memory-aware tools treat MemoryCore as a familiar backend without
+learning the internal adapter model.
+
+OpenAI and Claude plugins/apps could be a major adoption lane because they make
+MemoryCore available inside model-native workflows instead of only local agent
+runtimes.
+
+### Nontraditional Memory Substrates
+
+MemoryCore should eventually abstract nontraditional memory formats and work
+surfaces as memory substrates.
+
+Examples:
+
+- Notion.
+- Excel and spreadsheets.
+- Google Drive.
+- Docs and document stores.
+- Browser-captured pages.
+- Object stores.
+- Filesystem shares.
+
+The key idea is not to flatten all of these into one database. The key idea is
+to normalize how they are addressed, indexed, verified, routed, backed up, and
+migrated.
+
+This expands MemoryCore from "memory backend router" to "memory fabric." A
+spreadsheet cell, Notion block, Google Drive document, S3 object, QMD document,
+LCM transcript message, and Honcho observation are not the same kind of memory,
+but MemoryCore can still give them common control-plane treatment:
+
+- stable identity,
+- provenance pointer,
+- capability description,
+- privacy class,
+- freshness/staleness check,
+- route policy,
+- optional mirror/split policy,
+- backup/migration policy.
+
+This is later than v0.1, but it is central to the larger product shape.
+
 ### Backup And Migration
 
 Backup and migration are high-value features.
@@ -123,6 +201,7 @@ Likely scope:
 - Request/result audit.
 - Basic CLI and/or MCP tools.
 - Backend health and graceful degradation.
+- Initial OpenClaw integration path.
 
 Explicitly out of scope:
 
@@ -131,6 +210,7 @@ Explicitly out of scope:
 - Reasoning engine.
 - Agent framework or sandbox.
 - Broad model/browser/email/tool routing.
+- Broad third-party SaaS substrates such as Notion, Drive, and spreadsheets.
 
 ### v0.2: Plugin Insight Agents
 
@@ -157,6 +237,8 @@ Candidate capabilities:
 - Mark confidence and observation type.
 - Re-verify derived claims against source pointers.
 - Maintain quiet zones and privacy gates.
+- Start adding selected runtime integrations beyond OpenClaw if the control
+  plane boundary is stable.
 
 ### Later: Visualization And Cost/Context Diagnostics
 
@@ -185,3 +267,7 @@ model-cost tradeoffs.
 - What policy language should govern mirroring and splitting?
 - Which backend becomes the first source of derived insight: Honcho, gbrain, or
   a MemoryCore-native plugin lane?
+- Which endpoint comes first after MCP/CLI: REST, Pinecone-style API, ChatGPT,
+  Claude Desktop, or OpenAI/Claude plugin/app packaging?
+- Which nontraditional substrate should be the first proof case: Notion,
+  Google Drive, Excel/spreadsheets, filesystem mount, or S3?
