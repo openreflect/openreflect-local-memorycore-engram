@@ -1,0 +1,11 @@
+{
+  "request_id": "req_fixture_get",
+  "client_surface": "cli",
+  "operation": "get",
+  "intent": "source_get",
+  "pointer": {
+    "backend_id": "mock_healthy",
+    "pointer_id": "fixture/project-alpha.md",
+    "source_uri": "fixture://corpus/project-alpha.md"
+  }
+}

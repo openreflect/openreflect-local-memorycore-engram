@@ -1,0 +1,8 @@
+{
+  "backend_id": "mock_missing_pointer",
+  "health": "healthy",
+  "capabilities": ["search", "get", "verify", "health"],
+  "verify_result": {
+    "verification_state": "missing"
+  }
+}

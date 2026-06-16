@@ -1,0 +1,6 @@
+{
+  "request_id": "req_fixture_invalid_op",
+  "client_surface": "cli",
+  "operation": "summarize",
+  "query": "alpha-river-contract-fixture"
+}

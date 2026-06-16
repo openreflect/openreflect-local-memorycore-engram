@@ -1,0 +1,10 @@
+{
+  "backend_id": "mock_unhealthy",
+  "health": "unavailable",
+  "capabilities": ["search", "get", "verify", "health"],
+  "error": {
+    "code": "BACKEND_UNAVAILABLE",
+    "category": "backend_unavailable",
+    "message": "Mock backend is unavailable."
+  }
+}

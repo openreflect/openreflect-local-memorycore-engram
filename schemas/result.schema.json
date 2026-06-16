@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MemoryCore MVP Result",
+  "type": "object",
+  "required": ["request_id", "operation", "status", "results"],
+  "properties": {
+    "request_id": {
+      "type": "string",
+      "pattern": "^req_[a-z0-9_:-]+$"
+    },
+    "operation": {
+      "type": "string",
+      "enum": ["search", "get", "verify", "health"]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["ok", "error"]
+    },
+    "selected_backend": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]*$"
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/result_item"
+      }
+    },
+    "verification_state": {
+      "$ref": "#/$defs/verification_state"
+    },
+    "audit_id": {
+      "type": "string",
+      "pattern": "^audit_[a-z0-9_:-]+$"
+    },
+    "error": {
+      "$ref": "error.schema.json"
+    }
+  },
+  "$defs": {
+    "verification_state": {
+      "type": "string",
+      "enum": ["verified", "stale", "missing", "unsupported", "unknown"]
+    },
+    "result_item": {
+      "type": "object",
+      "required": ["backend_id", "pointer", "verification_state"],
+      "properties": {
+        "backend_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9_-]*$"
+        },
+        "pointer": {
+          "type": "object",
+          "required": ["backend_id", "pointer_id"],
+          "properties": {
+            "backend_id": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9_-]*$"
+            },
+            "pointer_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "source_uri": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        "snippet": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "rank": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "score": {
+          "type": "number"
+        },
+        "recall_mode": {
+          "type": "string"
+        },
+        "verification_state": {
+          "$ref": "#/$defs/verification_state"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

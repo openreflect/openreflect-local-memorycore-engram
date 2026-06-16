@@ -1,0 +1,9 @@
+{
+  "request_id": "req_fixture_search_mcp",
+  "client_surface": "mcp",
+  "operation": "search",
+  "intent": "file_corpus_recall",
+  "query": "alpha-river-contract-fixture",
+  "verify": true,
+  "limit": 5
+}

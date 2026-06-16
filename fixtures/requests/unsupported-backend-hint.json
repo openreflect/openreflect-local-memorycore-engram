@@ -1,0 +1,9 @@
+{
+  "request_id": "req_fixture_unsupported_backend_hint",
+  "client_surface": "cli",
+  "operation": "search",
+  "intent": "file_corpus_recall",
+  "backend_hint": "mock_no_verify",
+  "query": "alpha-river-contract-fixture",
+  "verify": true
+}

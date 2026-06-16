@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MemoryCore MVP Request",
+  "type": "object",
+  "required": ["request_id", "client_surface", "operation"],
+  "properties": {
+    "request_id": {
+      "type": "string",
+      "pattern": "^req_[a-z0-9_:-]+$"
+    },
+    "client_surface": {
+      "type": "string",
+      "enum": ["cli", "mcp", "openclaw", "test"]
+    },
+    "operation": {
+      "type": "string",
+      "enum": ["search", "get", "verify", "health"]
+    },
+    "intent": {
+      "type": "string",
+      "enum": ["file_corpus_recall", "transcript_continuity_recall", "source_get", "source_verify", "backend_health"]
+    },
+    "backend_hint": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]*$"
+    },
+    "query": {
+      "type": "string",
+      "minLength": 1
+    },
+    "pointer": {
+      "$ref": "#/$defs/pointer"
+    },
+    "verify": {
+      "type": "boolean",
+      "default": false
+    },
+    "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50,
+      "default": 10
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "operation": { "const": "search" } },
+        "required": ["operation"]
+      },
+      "then": {
+        "required": ["query"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "operation": { "enum": ["get", "verify"] } },
+        "required": ["operation"]
+      },
+      "then": {
+        "required": ["pointer"]
+      }
+    }
+  ],
+  "$defs": {
+    "pointer": {
+      "type": "object",
+      "required": ["backend_id", "pointer_id"],
+      "properties": {
+        "backend_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9_-]*$"
+        },
+        "pointer_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_uri": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

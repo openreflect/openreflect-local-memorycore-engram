@@ -1,0 +1,5 @@
+{
+  "backend_id": "mock_healthy",
+  "health": "healthy",
+  "capabilities": ["search", "get", "verify", "health"]
+}
