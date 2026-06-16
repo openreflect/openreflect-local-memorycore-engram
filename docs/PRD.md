@@ -51,6 +51,21 @@ users who already understand apps inside a chat interface. The local runtime and
 plugin surfaces matter because serious users need MemoryCore embedded directly
 where agents already work.
 
+## Distribution Surfaces
+
+MemoryCore should be packaged for the places users already choose tools:
+
+- ChatGPT-style app directories.
+- Codex plugin directories.
+- OpenClaw plugin/runtime configuration.
+- Hermes plugin/runtime configuration.
+- MCP client registries.
+
+The Codex plugin surface is especially important because it presents MemoryCore
+beside work tools such as documents, mail, repositories, drives, and task
+systems. That is the right mental category: MemoryCore is a context-shaping work
+tool, not only an infrastructure daemon.
+
 ## Goals
 
 - Route memory requests to appropriate backends based on capability, policy,
