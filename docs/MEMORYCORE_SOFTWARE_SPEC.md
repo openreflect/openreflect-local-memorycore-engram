@@ -2,7 +2,7 @@
 
 Date: 2026-06-15
 Project: OpenReflect Local MemoryCore / Engram
-Status: Draft v0.1
+Status: Draft v0.2
 Source basis: `research/memory-stack-feature-spec-2026-06-15.md`
 
 ## Purpose
@@ -39,6 +39,71 @@ MemoryCore combines these into one local system:
 6. Assemble prompt-ready context from evidence, summaries, and reasoned memory.
 7. Allow every claim to drill back to source.
 
+## Architectural Positioning
+
+MemoryCore is a backend routing and provenance control plane for AI memory,
+context, and work substrates.
+
+It is not primarily:
+
+- A frontend routing layer.
+- A model gateway only.
+- An agent framework.
+- A sandbox or execution runtime.
+- A direct replacement for existing model, memory, or tool systems.
+
+Those systems can plug into MemoryCore as clients, adapters, or execution
+targets. MemoryCore's core responsibility is to normalize incoming events,
+select the right backend capability, preserve provenance, and return or persist
+the result in the correct destination.
+
+OpenRouter is the closest public analogy for one slice of the design, but its
+scope is narrower. OpenRouter virtualizes LLM supply:
+
+```text
+client request -> normalized model API -> model/provider selection -> model response
+```
+
+MemoryCore virtualizes backend cognitive work:
+
+```text
+event/request -> intent + context policy -> memory/tool/model/agent adapter -> provenance-backed result
+```
+
+In other words, OpenRouter routes inference. MemoryCore routes work across
+memory, context, models, tools, agents, files, APIs, and durable provenance.
+
+### Position Between Context and Reasoning
+
+MemoryCore sits after raw storage and memory indexes, but before full reasoning
+or autonomous agent execution.
+
+```text
+raw storage / logs
+  -> indexes / memory substrates
+  -> context retrieval + provenance
+  -> MemoryCore routing layer
+  -> reasoning orchestration
+  -> agent framework
+  -> sandbox / execution runtime
+```
+
+On a 0-10 scale:
+
+```text
+0 = storage only
+2 = memory/index layer
+4 = context assembly + provenance
+5 = MemoryCore router/control plane
+7 = reasoning planner/orchestrator
+9 = agent framework
+10 = sandboxed autonomous execution
+```
+
+MemoryCore may make policy decisions that shape reasoning, but it should not own
+the whole reasoning loop. It prepares the substrate for reasoning and then hands
+off to the selected model, tool, agent, or adapter.
+
 ## Target Users
 
 Primary users:
@@ -62,6 +127,12 @@ Secondary users:
 - Do not treat summaries or conclusions as authoritative without provenance.
 - Do not hide compaction, derivation, or recall decisions from the operator.
 - Do not force all deployments to ingest private raw transcripts into a public repository.
+- Do not model LCM, QMD, Honcho, or similar systems as original sources of
+  truth when they are retrieval, reasoning, indexing, or provenance substrates.
+- Do not collapse MemoryCore into an agent framework. Agents are destinations,
+  adapters, or clients, not the whole system.
+- Do not collapse MemoryCore into a sandbox. Sandboxes are optional execution
+  targets selected by policy when isolation is required.
 
 ## Source Feature Mapping
 
@@ -129,6 +200,70 @@ context engine
 interfaces
   CLI, MCP/tools, HTTP API, SDK, operator UI
 ```
+
+## Virtualization Layer I/O Grid
+
+MemoryCore distinguishes original sources from retrieval/index layers and from
+execution destinations.
+
+```text
+Input / Origin              Normalized As              Routes To                        Output / Destination
+
+Telegram / Discord / chat   MessageEvent               Policy router                    Reply to same chat/client
+Voice session               UtteranceEvent             STT -> policy router             Spoken response / text response
+Codex/OpenClaw session      TaskEvent                  Tool/model/router layer          Session response / file edits
+Agent/session output        AgentResultEvent           Summarizer / memory router       Brief, task file, follow-up action
+
+Raw conversation transcript ConversationArtifact       Transcript/context adapter       Cited recalled context
+LCM summary/message DAG     RecallIndex                LCM adapter/query/expand         Source-backed continuity snippet
+Workspace files             FileArtifact               rg / parser / git / QMD          Snippet, patch, structured fact
+Git history                 VersionArtifact            git log/blame/diff               Provenance, regression evidence
+Daily notes / MEMORY / wiki MemoryArtifact             local rg / wiki / QMD            Durable context / updated memory
+QMD semantic index          SemanticIndex              QMD query/rerank                 Candidate concepts + source refs
+
+Browser page / web UI       WebArtifact                Chrome/CDP adapter               Extracted state / UI action
+External docs / web/GitHub  ExternalArtifact           web/API adapter                  Cited external evidence
+Email / calendar / APIs     ExternalPrivateArtifact    gated action adapter             Draft/action/summary
+
+Model request               InferenceRequest           model router                     Model response
+Coding task                 WorkOrder                  Codex / Claude Code / Cursor     Patch, review, commit-ready diff
+Background agent task       DelegatedWorkOrder         OpenClaw / ACP / Hermes          Report, artifact, callback
+Write/update request        PersistenceIntent          memory/wiki/file/git adapters    File write, commit, provenance record
+```
+
+Ingress clients include Telegram, Discord, voice, Codex/OpenClaw, browser,
+cron/heartbeat, and agent callbacks.
+
+Canonical event types include `MessageEvent`, `TaskEvent`, `UtteranceEvent`,
+`ArtifactEvent`, `RecallRequest`, `WorkOrder`, and `PersistenceIntent`.
+
+Virtualized service lanes include recall, semantic search, exact file search,
+git provenance, model inference, agent execution, browser/API action, and
+durable memory write.
+
+Egress destinations include the same chat, voice, OpenClaw session, file, wiki,
+memory store, git commit, agent report, and browser/API side effect.
+
+### Source vs Retrieval Layer Rule
+
+LCM is not an original source in the same sense as a Telegram message, raw
+transcript, workspace file, or git commit. LCM is a recall/index/provenance
+endpoint over prior conversation material.
+
+The correct route shape is:
+
+```text
+RecallRequest -> LCM adapter -> cited continuity result
+```
+
+not:
+
+```text
+Source -> LCM
+```
+
+The source of truth is the underlying conversation/message history and its
+source artifacts. LCM is the recoverability mechanism.
 
 ## Core Concepts
 
