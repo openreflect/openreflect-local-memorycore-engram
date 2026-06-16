@@ -59,12 +59,20 @@ Engram does not replace semantic search or summarization. It gives those systems
 │   └── PRD.md
 ├── examples/
 │   └── memory-record.example.json
+├── fixtures/
+│   ├── corpus/
+│   ├── mock-backends/
+│   └── requests/
 ├── prompts/
 │   └── validate-memory-record.prompt.md
 ├── schemas/
-│   └── memory-record.schema.json
+│   ├── error.schema.json
+│   ├── memory-record.schema.json
+│   ├── request.schema.json
+│   └── result.schema.json
 └── scripts/
-    └── validate_memory_record.py
+    ├── validate_memory_record.py
+    └── validate_mvp_packet_a.py
 ```
 
 ## Current status
@@ -75,12 +83,14 @@ Run the public-safe eval:
 
 ```bash
 python3 scripts/validate_memory_record.py examples/memory-record.example.json
+python3 scripts/validate_mvp_packet_a.py
 ```
 
 Expected output:
 
 ```text
 ENGRAM_MEMORY_RECORD_OK
+MEMORYCORE_PACKET_A_OK
 ```
 
 ## Public/private model
