@@ -1,0 +1,8 @@
+{
+  "tool_name": "memorycore_search",
+  "arguments": {
+    "query": "alpha-river-contract-fixture",
+    "intent": "file_corpus_recall",
+    "limit": 5
+  }
+}

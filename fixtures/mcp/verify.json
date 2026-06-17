@@ -1,0 +1,8 @@
+{
+  "tool_name": "memorycore_verify",
+  "arguments": {
+    "backend": "mock_healthy",
+    "pointer_id": "fixtures/corpus/project-alpha.md",
+    "state": "verified"
+  }
+}

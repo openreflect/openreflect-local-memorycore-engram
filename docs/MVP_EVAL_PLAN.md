@@ -491,6 +491,17 @@ Failure meaning:
 
 ### EVAL-011: MCP Tool Surface
 
+Current public-safe scaffold:
+
+- `memorycore/mcp_surface.py` defines MCP-shaped tool descriptors and local
+  contract calls for `memorycore_search`, `memorycore_get`,
+  `memorycore_verify`, and `memorycore_health`.
+- Static MCP request fixtures live under `fixtures/mcp/`.
+- `scripts/validate_mvp_mcp_surface.py` checks the MCP-shaped surface against
+  static QMD, LCM, mock backend, and temporary audit fixtures only; it does not
+  start an MCP server or call live QMD, Lossless-Claw, Burrow, OpenClaw, or the
+  public-safe eval runner.
+
 Agent task:
 
 - Implement MCP tools for MVP operations.

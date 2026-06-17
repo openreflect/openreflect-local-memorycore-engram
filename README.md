@@ -64,6 +64,7 @@ Engram does not replace semantic search or summarization. It gives those systems
 │   ├── errors/
 │   ├── backend-registry/
 │   ├── lcm/
+│   ├── mcp/
 │   ├── mock-backends/
 │   ├── qmd/
 │   └── requests/
@@ -71,6 +72,7 @@ Engram does not replace semantic search or summarization. It gives those systems
 │   ├── audit_log.py
 │   ├── cli.py
 │   ├── lcm_adapter.py
+│   ├── mcp_surface.py
 │   ├── provenance_ledger.py
 │   ├── qmd_adapter.py
 │   ├── registry_router.py
@@ -86,6 +88,7 @@ Engram does not replace semantic search or summarization. It gives those systems
 └── scripts/
     ├── validate_memory_record.py
     ├── validate_mvp_cli.py
+    ├── validate_mvp_mcp_surface.py
     ├── validate_mvp_audit_log.py
     ├── validate_mvp_packet_a.py
     ├── validate_mvp_packet_b.py
@@ -115,6 +118,7 @@ python3 scripts/validate_mvp_provenance_ledger.py
 python3 scripts/validate_mvp_verification_state.py
 python3 scripts/validate_mvp_audit_log.py
 python3 scripts/validate_mvp_cli.py
+python3 scripts/validate_mvp_mcp_surface.py
 ```
 
 Expected output:
@@ -131,6 +135,7 @@ MEMORYCORE_PROVENANCE_LEDGER_OK
 MEMORYCORE_VERIFICATION_STATE_OK
 MEMORYCORE_AUDIT_LOG_OK
 MEMORYCORE_CLI_OK
+MEMORYCORE_MCP_SURFACE_OK
 ```
 
 ## Public/private model

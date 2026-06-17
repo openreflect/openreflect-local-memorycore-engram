@@ -1,0 +1,7 @@
+{
+  "tool_name": "memorycore_get",
+  "arguments": {
+    "backend": "qmd",
+    "pointer_id": "fixtures/corpus/project-alpha.md"
+  }
+}

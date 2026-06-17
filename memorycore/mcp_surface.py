@@ -1,0 +1,137 @@
+"""Fixture-only MCP tool surface contract for the MemoryCore MVP.
+
+This module models the request/response behavior expected from MCP tools
+without starting an MCP server or calling OpenClaw, Burrow, QMD, or
+Lossless-Claw. It is a static contract layer for EVAL-011.
+"""
+
+from __future__ import annotations
+
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
+
+from memorycore.audit_log import append_record, build_audit_record
+from memorycore.cli import DEFAULT_AUDIT_LOG, _execute_request
+
+
+TOOL_DEFINITIONS: tuple[dict[str, Any], ...] = (
+    {
+        "name": "memorycore_search",
+        "description": "Search MemoryCore backends using public-safe fixture data.",
+        "input_schema": {
+            "type": "object",
+            "required": ["query"],
+            "properties": {
+                "query": {"type": "string"},
+                "backend": {"type": "string", "enum": ["qmd", "lossless_claw", "mock_healthy"]},
+                "intent": {"type": "string"},
+                "limit": {"type": "integer", "minimum": 1},
+            },
+        },
+    },
+    {
+        "name": "memorycore_get",
+        "description": "Resolve a MemoryCore pointer using public-safe fixture data.",
+        "input_schema": {
+            "type": "object",
+            "required": ["pointer_id"],
+            "properties": {
+                "pointer_id": {"type": "string"},
+                "backend": {"type": "string", "enum": ["qmd", "lossless_claw", "mock_healthy"]},
+            },
+        },
+    },
+    {
+        "name": "memorycore_verify",
+        "description": "Verify a MemoryCore pointer using public-safe fixture data.",
+        "input_schema": {
+            "type": "object",
+            "required": ["pointer_id"],
+            "properties": {
+                "pointer_id": {"type": "string"},
+                "backend": {"type": "string", "enum": ["qmd", "lossless_claw", "mock_healthy"]},
+                "state": {"type": "string"},
+            },
+        },
+    },
+    {
+        "name": "memorycore_health",
+        "description": "Return MemoryCore backend health using public-safe fixture data.",
+        "input_schema": {"type": "object", "properties": {}},
+    },
+)
+
+
+def list_tools() -> list[dict[str, Any]]:
+    return [dict(tool) for tool in TOOL_DEFINITIONS]
+
+
+def call_tool(tool_name: str, arguments: dict[str, Any] | None = None, *, audit_log: Path | None = None) -> dict[str, Any]:
+    arguments = arguments or {}
+    request = _request_from_tool(tool_name, arguments)
+    result = _execute_request(request)
+
+    if request["operation"] in {"search", "get", "verify"}:
+        record = build_audit_record(request, result, timestamp=_timestamp())
+        append_record(audit_log or DEFAULT_AUDIT_LOG, record)
+        result = {**result, "audit_id": record["audit_id"]}
+
+    return result
+
+
+def _request_from_tool(tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+    base = {
+        "request_id": f"req_mcp_{tool_name.removeprefix('memorycore_')}",
+        "client_surface": "mcp",
+    }
+
+    if tool_name == "memorycore_health":
+        return {**base, "operation": "health", "intent": "backend_health"}
+
+    if tool_name == "memorycore_search":
+        query = _required_string(arguments, "query")
+        request = {
+            **base,
+            "operation": "search",
+            "intent": arguments.get("intent", "file_corpus_recall"),
+            "query": query,
+            "limit": int(arguments.get("limit", 5)),
+        }
+        if arguments.get("backend"):
+            request["backend_hint"] = arguments["backend"]
+        return request
+
+    if tool_name == "memorycore_get":
+        backend = arguments.get("backend", "qmd")
+        pointer_id = _required_string(arguments, "pointer_id")
+        return {
+            **base,
+            "operation": "get",
+            "intent": "source_get",
+            "pointer": {"backend_id": backend, "pointer_id": pointer_id, "source_uri": pointer_id},
+        }
+
+    if tool_name == "memorycore_verify":
+        backend = arguments.get("backend", "mock_healthy")
+        pointer_id = _required_string(arguments, "pointer_id")
+        return {
+            **base,
+            "operation": "verify",
+            "intent": "source_verify",
+            "pointer": {"backend_id": backend, "pointer_id": pointer_id, "source_uri": pointer_id},
+            "verification_state": arguments.get("state", "verified"),
+        }
+
+    raise ValueError(f"unknown MemoryCore MCP tool: {tool_name}")
+
+
+def _required_string(arguments: dict[str, Any], key: str) -> str:
+    value = arguments.get(key)
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"missing required MCP argument: {key}")
+    return value
+
+
+def _timestamp() -> str:
+    return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
