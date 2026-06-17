@@ -61,12 +61,14 @@ Engram does not replace semantic search or summarization. It gives those systems
 │   └── memory-record.example.json
 ├── fixtures/
 │   ├── corpus/
+│   ├── backend-registry/
 │   ├── mock-backends/
 │   └── requests/
 ├── prompts/
 │   └── validate-memory-record.prompt.md
 ├── schemas/
 │   ├── error.schema.json
+│   ├── backend.schema.json
 │   ├── memory-record.schema.json
 │   ├── request.schema.json
 │   └── result.schema.json

@@ -1,0 +1,47 @@
+{
+  "backends": [
+    {
+      "backend_id": "qmd",
+      "display_name": "QMD",
+      "description": "Local file and note recall backend.",
+      "health": "unknown",
+      "capabilities": ["search", "get", "health"],
+      "default_intents": ["file_corpus_recall", "source_get", "backend_health"]
+    },
+    {
+      "backend_id": "lossless_claw",
+      "display_name": "Lossless-Claw",
+      "description": "Conversation continuity and transcript recall backend.",
+      "health": "unknown",
+      "capabilities": ["search", "get", "health"],
+      "default_intents": ["transcript_continuity_recall", "source_get", "backend_health"]
+    },
+    {
+      "backend_id": "mock_healthy",
+      "display_name": "Healthy Mock Backend",
+      "description": "Static backend used for registry and router contract checks.",
+      "health": "healthy",
+      "capabilities": ["search", "get", "verify", "health"],
+      "default_intents": [
+        "file_corpus_recall",
+        "transcript_continuity_recall",
+        "source_get",
+        "source_verify",
+        "backend_health"
+      ]
+    },
+    {
+      "backend_id": "mock_unhealthy",
+      "display_name": "Unavailable Mock Backend",
+      "description": "Static backend used to exercise unavailable-backend handling.",
+      "health": "unavailable",
+      "capabilities": ["search", "get", "verify", "health"],
+      "default_intents": ["backend_health"],
+      "error": {
+        "code": "BACKEND_UNAVAILABLE",
+        "category": "backend_unavailable",
+        "message": "Mock backend is unavailable."
+      }
+    }
+  ]
+}

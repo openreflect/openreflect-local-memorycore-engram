@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MemoryCore MVP Backend Definition",
+  "type": "object",
+  "required": ["backend_id", "display_name", "health", "capabilities"],
+  "properties": {
+    "backend_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]*$"
+    },
+    "display_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string"
+    },
+    "health": {
+      "type": "string",
+      "enum": ["healthy", "unavailable", "unknown"]
+    },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": ["search", "get", "verify", "health"]
+      }
+    },
+    "default_intents": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "file_corpus_recall",
+          "transcript_continuity_recall",
+          "source_get",
+          "source_verify",
+          "backend_health"
+        ]
+      }
+    },
+    "error": {
+      "$ref": "error.schema.json"
+    }
+  },
+  "additionalProperties": false
+}
