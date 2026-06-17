@@ -1,0 +1,9 @@
+{
+  "summary_id": "sum_missing_fixture",
+  "error": {
+    "code": "POINTER_MISSING",
+    "category": "pointer_missing",
+    "message": "Lossless-Claw fixture pointer was not found.",
+    "verification_state": "missing"
+  }
+}

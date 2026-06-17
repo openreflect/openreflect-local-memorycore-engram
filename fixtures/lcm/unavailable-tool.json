@@ -1,0 +1,10 @@
+{
+  "error": {
+    "code": "BACKEND_UNAVAILABLE",
+    "category": "backend_unavailable",
+    "message": "Lossless-Claw fixture tool is unavailable.",
+    "details": {
+      "tool": "lcm_grep"
+    }
+  }
+}

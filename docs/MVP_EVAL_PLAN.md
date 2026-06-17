@@ -258,6 +258,17 @@ Failure meaning:
 
 ### EVAL-006: Lossless-Claw Adapter Contract
 
+Current public-safe scaffold:
+
+- Static Lossless-Claw-shaped fixtures live under `fixtures/lcm/`.
+- `memorycore/lcm_adapter.py` normalizes mocked grep/search, expand/get,
+  missing pointer, unavailable tool, and health output into the shared
+  result/error contract.
+- `scripts/validate_mvp_lcm_adapter.py` verifies that the adapter preserves
+  summary/message/conversation pointers, snippets, citations, recall mode, and
+  non-overclaiming verification states without calling live lossless-claw tools
+  or a transcript store.
+
 Agent task:
 
 - Implement Lossless-Claw adapter methods: `search`, `get`, `verify`, `health`.

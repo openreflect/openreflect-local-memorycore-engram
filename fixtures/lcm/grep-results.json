@@ -1,0 +1,20 @@
+{
+  "query": "\"continuity handoff\"",
+  "mode": "full_text",
+  "results": [
+    {
+      "summary_id": "sum_public_fixture_001",
+      "message_id": "msg_public_fixture_001",
+      "conversation_id": "conv_public_fixture",
+      "snippet": "The continuity handoff fixture preserves a source-backed transcript checkpoint without private chat content.",
+      "score": 12.4
+    },
+    {
+      "summary_id": "sum_public_fixture_002",
+      "message_id": "msg_public_fixture_002",
+      "conversation_id": "conv_public_fixture",
+      "snippet": "A second fixture result shows how recall can cite a compact summary pointer.",
+      "score": 7.1
+    }
+  ]
+}

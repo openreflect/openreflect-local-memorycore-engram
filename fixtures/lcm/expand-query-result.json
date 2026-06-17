@@ -1,0 +1,12 @@
+{
+  "summary_id": "sum_public_fixture_001",
+  "conversation_id": "conv_public_fixture",
+  "answer": "The public fixture says the continuity handoff should keep exact source pointers and avoid overclaiming freshness.",
+  "citations": [
+    {
+      "summary_id": "sum_public_fixture_001",
+      "message_id": "msg_public_fixture_001"
+    }
+  ],
+  "verification_state": "unknown"
+}
