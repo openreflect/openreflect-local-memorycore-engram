@@ -348,6 +348,15 @@ Failure meaning:
 
 ### EVAL-008: Verification State Contract
 
+Current public-safe scaffold:
+
+- `memorycore/verification_state.py` defines the shared verification-state
+  vocabulary and normalization helpers.
+- `scripts/validate_mvp_verification_state.py` checks verified, stale, missing,
+  unsupported, and unknown states against static QMD/LCM/mock fixtures.
+- The scaffold explicitly keeps missing pointers, unsupported verification, and
+  backend timeouts from returning `verified`.
+
 Agent task:
 
 - Implement common verification behavior across adapters.
