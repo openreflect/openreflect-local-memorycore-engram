@@ -1,0 +1,9 @@
+{
+  "code": "MEMORYCORE_UNSUPPORTED_OPERATION",
+  "category": "unsupported_operation",
+  "message": "The requested backend does not support this operation.",
+  "details": {
+    "backend_id": "mock-search-only",
+    "operation": "verify"
+  }
+}

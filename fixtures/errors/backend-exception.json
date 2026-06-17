@@ -1,0 +1,9 @@
+{
+  "code": "MEMORYCORE_UNKNOWN_FAILURE",
+  "category": "unknown_failure",
+  "message": "The backend failed unexpectedly.",
+  "details": {
+    "backend_id": "mock-unstable",
+    "operation": "search"
+  }
+}

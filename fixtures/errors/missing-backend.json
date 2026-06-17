@@ -1,0 +1,8 @@
+{
+  "code": "MEMORYCORE_MISSING_BACKEND",
+  "category": "missing_backend",
+  "message": "No backend is registered for the requested backend id.",
+  "details": {
+    "backend_id": "not-registered"
+  }
+}

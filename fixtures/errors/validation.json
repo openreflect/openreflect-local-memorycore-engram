@@ -1,0 +1,9 @@
+{
+  "code": "MEMORYCORE_VALIDATION_ERROR",
+  "category": "validation",
+  "message": "The request failed MemoryCore contract validation.",
+  "details": {
+    "field": "operation",
+    "reason": "unsupported operation"
+  }
+}

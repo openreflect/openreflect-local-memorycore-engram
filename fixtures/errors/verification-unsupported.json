@@ -1,0 +1,10 @@
+{
+  "code": "MEMORYCORE_VERIFICATION_UNSUPPORTED",
+  "category": "verification_unsupported",
+  "message": "The backend cannot verify this pointer type.",
+  "verification_state": "unsupported",
+  "details": {
+    "backend_id": "mock-no-verify",
+    "pointer_id": "public-note"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "code": "MEMORYCORE_BACKEND_UNAVAILABLE",
+  "category": "backend_unavailable",
+  "message": "The requested backend is unavailable.",
+  "details": {
+    "backend_id": "mock-unavailable",
+    "health": "unavailable"
+  }
+}

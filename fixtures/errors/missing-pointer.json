@@ -1,0 +1,10 @@
+{
+  "code": "MEMORYCORE_POINTER_MISSING",
+  "category": "pointer_missing",
+  "message": "The requested memory pointer was not found.",
+  "verification_state": "missing",
+  "details": {
+    "backend_id": "mock-memory",
+    "pointer_id": "missing-note"
+  }
+}
