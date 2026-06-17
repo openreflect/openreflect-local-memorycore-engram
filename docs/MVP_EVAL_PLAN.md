@@ -216,6 +216,15 @@ Failure meaning:
 
 ### EVAL-005: QMD Adapter Contract
 
+Current public-safe scaffold:
+
+- Static QMD-shaped fixtures live under `fixtures/qmd/`.
+- `memorycore/qmd_adapter.py` normalizes mocked QMD search, get, missing
+  pointer, and health output into the shared result/error contract.
+- `scripts/validate_mvp_qmd_adapter.py` verifies that the adapter preserves
+  pointers, snippets, content, ranking, and non-overclaiming verification
+  states without calling a live QMD index.
+
 Agent task:
 
 - Implement QMD adapter methods: `search`, `get`, `verify`, `health`.

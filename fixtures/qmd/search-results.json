@@ -1,0 +1,15 @@
+{
+  "query": "alpha-river-contract-fixture",
+  "results": [
+    {
+      "path": "fixtures/corpus/project-alpha.md",
+      "snippet": "Project Alpha uses the alpha-river-contract-fixture phrase for deterministic recall.",
+      "score": 0.98
+    },
+    {
+      "path": "fixtures/corpus/runbook-memorycore.md",
+      "snippet": "The MemoryCore runbook explains how public fixtures remain separate from private memory.",
+      "score": 0.61
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "path": "fixtures/corpus/missing.md",
+  "error": {
+    "code": "POINTER_MISSING",
+    "category": "pointer_missing",
+    "message": "QMD fixture pointer was not found.",
+    "verification_state": "missing"
+  }
+}

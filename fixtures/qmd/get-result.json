@@ -1,0 +1,4 @@
+{
+  "path": "fixtures/corpus/project-alpha.md",
+  "content": "# Project Alpha\n\nProject Alpha uses the alpha-river-contract-fixture phrase for deterministic recall.\n\nThis file is synthetic public fixture content."
+}

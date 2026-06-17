@@ -64,8 +64,10 @@ Engram does not replace semantic search or summarization. It gives those systems
 │   ├── errors/
 │   ├── backend-registry/
 │   ├── mock-backends/
+│   ├── qmd/
 │   └── requests/
 ├── memorycore/
+│   ├── qmd_adapter.py
 │   └── registry_router.py
 ├── prompts/
 │   └── validate-memory-record.prompt.md
@@ -80,6 +82,7 @@ Engram does not replace semantic search or summarization. It gives those systems
     ├── validate_mvp_packet_a.py
     ├── validate_mvp_packet_b.py
     ├── validate_mvp_packet_c.py
+    ├── validate_mvp_qmd_adapter.py
     └── validate_mvp_router.py
 ```
 
@@ -95,6 +98,7 @@ python3 scripts/validate_mvp_packet_a.py
 python3 scripts/validate_mvp_packet_b.py
 python3 scripts/validate_mvp_packet_c.py
 python3 scripts/validate_mvp_router.py
+python3 scripts/validate_mvp_qmd_adapter.py
 ```
 
 Expected output:
@@ -105,6 +109,7 @@ MEMORYCORE_PACKET_A_OK
 MEMORYCORE_PACKET_B_OK
 MEMORYCORE_PACKET_C_OK
 MEMORYCORE_ROUTER_OK
+MEMORYCORE_QMD_ADAPTER_OK
 ```
 
 ## Public/private model
