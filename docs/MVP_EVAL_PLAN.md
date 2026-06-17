@@ -539,6 +539,13 @@ Failure meaning:
 
 ### EVAL-012: OpenClaw Integration Smoke
 
+Current prep scaffold:
+
+- `docs/OPENCLAW_INTEGRATION_SMOKE_PLAN.md` defines the fixture-only smoke
+  boundary, preconditions, required observations, and stop conditions.
+- The plan is documentation only and has not been executed while the current
+  OpenClaw/Burrow integration hard stop remains active.
+
 Agent task:
 
 - Implement the first OpenClaw integration path.

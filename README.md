@@ -56,6 +56,8 @@ Engram does not replace semantic search or summarization. It gives those systems
 ├── README.md
 ├── docs/
 │   ├── ARCHITECTURE.md
+│   ├── MVP_EVAL_PLAN.md
+│   ├── OPENCLAW_INTEGRATION_SMOKE_PLAN.md
 │   └── PRD.md
 ├── examples/
 │   └── memory-record.example.json
@@ -103,6 +105,10 @@ Engram does not replace semantic search or summarization. It gives those systems
 ## Current status
 
 OpenReflect-Local-MemoryCore-Engram is staged as a public skeleton. The current implementation defines the product frame, architecture, synthetic memory-record schema, and deterministic validation.
+
+EVAL-012 OpenClaw integration smoke is planned but not executed. The smoke
+boundary and stop conditions are documented in
+`docs/OPENCLAW_INTEGRATION_SMOKE_PLAN.md`.
 
 Run the public-safe eval:
 
