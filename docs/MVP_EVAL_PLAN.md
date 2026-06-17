@@ -303,6 +303,18 @@ Failure meaning:
 
 ### EVAL-007: Provenance Pointer Ledger
 
+Current public-safe scaffold:
+
+- `memorycore/provenance_ledger.py` creates JSONL ledger records from
+  normalized QMD/LCM result metadata.
+- Ledger records keep request id, backend id, operation, pointer, verification
+  state, timestamp, result index, status, and structured error code/category
+  when applicable.
+- `scripts/validate_mvp_provenance_ledger.py` verifies QMD result pointers, LCM
+  summary pointers, missing-pointer error records, no snippet/content storage,
+  JSONL append, and read-back by ledger id using only temporary public-safe
+  data.
+
 Agent task:
 
 - Implement persistent provenance pointer records.
