@@ -392,6 +392,18 @@ Failure meaning:
 
 ### EVAL-009: Request/Result Audit
 
+Current public-safe scaffold:
+
+- `memorycore/audit_log.py` creates JSONL audit records from normalized
+  requests and results.
+- Audit records keep request id, client surface, operation, normalized intent,
+  selected backend, result count, pointer ids, verification state, error
+  code/category, timestamp, and status.
+- `scripts/validate_mvp_audit_log.py` verifies successful QMD/LCM searches,
+  unsupported verification, unavailable backend, validation error, JSONL append,
+  recent read-back, and no snippet/content/citation storage using only static
+  public-safe fixtures.
+
 Agent task:
 
 - Implement audit records for successful and failed requests.

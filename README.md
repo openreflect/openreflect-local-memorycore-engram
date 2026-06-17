@@ -68,6 +68,7 @@ Engram does not replace semantic search or summarization. It gives those systems
 │   ├── qmd/
 │   └── requests/
 ├── memorycore/
+│   ├── audit_log.py
 │   ├── lcm_adapter.py
 │   ├── provenance_ledger.py
 │   ├── qmd_adapter.py
@@ -83,6 +84,7 @@ Engram does not replace semantic search or summarization. It gives those systems
 │   └── result.schema.json
 └── scripts/
     ├── validate_memory_record.py
+    ├── validate_mvp_audit_log.py
     ├── validate_mvp_packet_a.py
     ├── validate_mvp_packet_b.py
     ├── validate_mvp_packet_c.py
@@ -109,6 +111,7 @@ python3 scripts/validate_mvp_qmd_adapter.py
 python3 scripts/validate_mvp_lcm_adapter.py
 python3 scripts/validate_mvp_provenance_ledger.py
 python3 scripts/validate_mvp_verification_state.py
+python3 scripts/validate_mvp_audit_log.py
 ```
 
 Expected output:
@@ -123,6 +126,7 @@ MEMORYCORE_QMD_ADAPTER_OK
 MEMORYCORE_LCM_ADAPTER_OK
 MEMORYCORE_PROVENANCE_LEDGER_OK
 MEMORYCORE_VERIFICATION_STATE_OK
+MEMORYCORE_AUDIT_LOG_OK
 ```
 
 ## Public/private model
