@@ -440,6 +440,17 @@ Failure meaning:
 
 ### EVAL-010: CLI Developer Surface
 
+Current public-safe scaffold:
+
+- `memorycore/cli.py` provides a fixture-only CLI with JSON output for
+  `list-backends`, `health`, `search`, `get`, `verify`, and recent `audit`
+  records.
+- The CLI writes request/result audit records to a configurable JSONL path for
+  routed `search`, `get`, and `verify` operations.
+- `scripts/validate_mvp_cli.py` invokes the CLI against static QMD, LCM, mock
+  backend, and temporary audit fixtures only; it does not call live QMD,
+  Lossless-Claw, Burrow, OpenClaw, or the public-safe eval runner.
+
 Agent task:
 
 - Implement CLI commands for MVP operations.
