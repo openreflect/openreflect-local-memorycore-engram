@@ -45,6 +45,21 @@ Use the smallest call set that proves the surface:
 3. `memorycore_verify` against a mock-supported pointer
 4. one structured failure, such as unsupported QMD verify
 
+## Pre-Execution Checklist
+
+Before any smoke run starts, record these choices in the run note:
+
+- approval source and timestamp lifting the current integration hard stop,
+- caller path selected from the allowed options above,
+- fixture-only or live-backend mode,
+- exact command or tool entrypoint to be invoked,
+- audit file path,
+- expected cleanup action for temporary files,
+- stop-condition reviewer.
+
+If any item is unknown, do not start the smoke. Update this plan or ask for the
+missing decision instead.
+
 ## Required Observations
 
 For each successful routed call, capture:
@@ -99,3 +114,39 @@ The OpenClaw caller should be able to inspect:
 
 The exact pointer can differ by selected fixture. The structural fields should
 not.
+
+## Run Note Template
+
+Use this template when the smoke is actually approved and run:
+
+```markdown
+# EVAL-012 OpenClaw Integration Smoke Run
+
+Date:
+Approval source:
+Caller path:
+Backend mode:
+Entrypoint:
+Audit file:
+
+## Calls
+
+| Call | Status | Selected backend | Pointer or reason | Verification state | Audit id |
+| --- | --- | --- | --- | --- | --- |
+| `memorycore_health` | | | | | |
+| `memorycore_search` | | | | | |
+| `memorycore_verify` | | | | | |
+| structured failure | | | | | |
+
+## Boundary Check
+
+- Private snippets/content/citations/summaries/transcript text persisted: yes/no
+- Fixture mode distinguishable from live mode: yes/no
+- Cleanup completed: yes/no
+
+## Verdict
+
+Pass/fail:
+Reason:
+Next action:
+```

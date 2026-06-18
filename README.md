@@ -108,7 +108,9 @@ OpenReflect-Local-MemoryCore-Engram is staged as a public skeleton. The current 
 
 EVAL-012 OpenClaw integration smoke is planned but not executed. The smoke
 boundary and stop conditions are documented in
-`docs/OPENCLAW_INTEGRATION_SMOKE_PLAN.md`.
+`docs/OPENCLAW_INTEGRATION_SMOKE_PLAN.md`, including the pre-execution
+checklist and run-note template that must be filled when the current
+integration hard stop is lifted.
 
 Run the public-safe eval:
 

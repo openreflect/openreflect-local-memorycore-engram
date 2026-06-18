@@ -543,6 +543,9 @@ Current prep scaffold:
 
 - `docs/OPENCLAW_INTEGRATION_SMOKE_PLAN.md` defines the fixture-only smoke
   boundary, preconditions, required observations, and stop conditions.
+- The smoke plan includes a pre-execution checklist and run-note template so
+  approval, caller path, backend mode, entrypoint, audit file, cleanup, and
+  stop-condition reviewer are explicit before execution.
 - The plan is documentation only and has not been executed while the current
   OpenClaw/Burrow integration hard stop remains active.
 
