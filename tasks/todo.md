@@ -14,17 +14,17 @@
   - Files: `memorycore/cli.py`, optional `memorycore/eval.py`, `README.md`,
     `SPEC.md`
 
-- [ ] Task 3: Define QMD live adapter boundary
+- [x] Task 3: Define QMD live adapter boundary
   - Acceptance: first live QMD mode is explicit, contract-compatible, and
     public/private safe.
   - Verify: public-safe evals pass and local-only QMD boundary is documented.
-  - Files: `docs/MVP_EVAL_PLAN.md`, `memorycore/qmd_adapter.py`, eval scripts
+  - Files: `docs/LIVE_BACKEND_BOUNDARIES.md`, `docs/MVP_EVAL_PLAN.md`
 
-- [ ] Task 4: Define Lossless-Claw live adapter boundary
+- [x] Task 4: Define Lossless-Claw live adapter boundary
   - Acceptance: first LCM live/synthetic/mock mode is explicit and does not
     overclaim verification.
   - Verify: public-safe evals pass and local-only LCM boundary is documented.
-  - Files: `docs/MVP_EVAL_PLAN.md`, `memorycore/lcm_adapter.py`, eval scripts
+  - Files: `docs/LIVE_BACKEND_BOUNDARIES.md`, `docs/MVP_EVAL_PLAN.md`
 
 - [ ] Task 5: Prepare MCP server/tool handoff
   - Acceptance: MCP-shaped calls keep CLI-compatible normalized results and

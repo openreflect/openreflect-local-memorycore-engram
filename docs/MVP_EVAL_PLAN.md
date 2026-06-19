@@ -256,6 +256,13 @@ Failure meaning:
 
 - MemoryCore cannot prove local corpus recall through a real backend.
 
+Live boundary:
+
+- See `docs/LIVE_BACKEND_BOUNDARIES.md`.
+- The first live QMD path should be a local-only adapter mode over the `qmd`
+  CLI, keeping public evals fixture-only and preserving the shared result
+  contract.
+
 ### EVAL-006: Lossless-Claw Adapter Contract
 
 Current public-safe scaffold:
@@ -300,6 +307,12 @@ Pass criteria:
 Failure meaning:
 
 - MemoryCore cannot prove transcript continuity routing and must remain QMD-only.
+
+Live boundary:
+
+- See `docs/LIVE_BACKEND_BOUNDARIES.md`.
+- The first live Lossless-Claw path should use host-injected tool functions, not
+  public package imports or committed transcript data.
 
 ### EVAL-007: Provenance Pointer Ledger
 
