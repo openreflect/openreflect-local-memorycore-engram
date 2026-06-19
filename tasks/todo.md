@@ -32,6 +32,12 @@
   - Verify: `python3 scripts/validate_mvp_mcp_surface.py`
   - Files: `memorycore/mcp_surface.py`, MCP eval/docs
 
+- [x] Task 5a: Create parallel agent planning packets
+  - Acceptance: five disjoint packets exist for QMD, LCM, MCP, contracts, and
+    gated integration/E2E work.
+  - Verify: `test -f tasks/agent-packets/PACKET-01-qmd-live-local.md && test -f tasks/agent-packets/PACKET-05-integration-e2e.md`
+  - Files: `tasks/agent-packets/`
+
 - [x] Task 6: Scaffold discipline artifacts
   - Acceptance: context, API, sources, risk, review, threat model,
     observability, runbook, CI, ADR, performance, and migration docs exist as
