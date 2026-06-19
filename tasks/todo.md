@@ -6,7 +6,7 @@
   - Verify: `test -f SPEC.md && test -f tasks/plan.md && test -f tasks/todo.md`
   - Files: `SPEC.md`, `tasks/plan.md`, `tasks/todo.md`
 
-- [ ] Task 2: Add a consolidated public-safe eval command
+- [x] Task 2: Add a consolidated public-safe eval command
   - Acceptance: `python3 -m memorycore.cli eval --public-safe` runs all current
     public-safe eval scripts and reports passed, failed, skipped, backend,
     fixture, audit, and provenance fields.

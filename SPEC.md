@@ -58,7 +58,9 @@ python3 -m memorycore.cli eval --public-safe
 
 The consolidated command should report passed eval ids, failed eval ids,
 skipped local-only eval ids, backend availability, fixture corpus status, and
-audit/provenance record counts created during the run.
+audit/provenance record count fields. Public-safe fixture evals use temporary
+audit/provenance storage, so the consolidated runner reports `0` persisted
+records created unless a future eval deliberately writes to a configured path.
 
 ## Project Structure
 

@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from memorycore.audit_log import append_record, build_audit_record, read_recent
+from memorycore.eval import run_public_safe_eval
 from memorycore.lcm_adapter import normalize_lcm_get, normalize_lcm_search
 from memorycore.qmd_adapter import normalize_qmd_get, normalize_qmd_search
 from memorycore.registry_router import BackendRegistry, route_request
@@ -32,6 +33,11 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.command == "audit":
             return _emit(read_recent(Path(args.audit_log), limit=args.limit), args.json)
+        if args.command == "eval":
+            if not args.public_safe:
+                raise ValueError("only --public-safe eval mode is currently supported")
+            result = run_public_safe_eval()
+            return _emit(result, args.json, ok=result["status"] == "ok")
 
         request = _request_from_args(args)
         result = _execute_request(request)
@@ -81,6 +87,9 @@ def _parser() -> argparse.ArgumentParser:
 
     audit = subparsers.add_parser("audit")
     audit.add_argument("--limit", type=int, default=10)
+
+    eval_parser = subparsers.add_parser("eval")
+    eval_parser.add_argument("--public-safe", action="store_true", required=True)
 
     return parser
 

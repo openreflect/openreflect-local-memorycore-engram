@@ -115,6 +115,12 @@ integration hard stop is lifted.
 Run the public-safe eval:
 
 ```bash
+python3 -m memorycore.cli eval --public-safe
+```
+
+Or run the individual validation scripts directly:
+
+```bash
 python3 scripts/validate_memory_record.py examples/memory-record.example.json
 python3 scripts/validate_mvp_packet_a.py
 python3 scripts/validate_mvp_packet_b.py
