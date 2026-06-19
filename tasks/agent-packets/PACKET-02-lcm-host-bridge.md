@@ -42,6 +42,33 @@ Do not edit:
    transcript IDs.
 5. Preserve fixture adapter behavior.
 
+## End Eval
+
+Named end eval: `MEMORYCORE_LCM_LIVE_BACKEND`.
+
+Executable target:
+
+```bash
+python3 scripts/validate_local_lcm_adapter.py --synthetic
+```
+
+The end eval passes when:
+
+- it uses a synthetic host bridge or isolated test store, not private
+  conversation data;
+- grep/describe/expand-query shaped host results normalize into the shared
+  MemoryCore result contract;
+- absent summary/message, unavailable host tool, timeout, and unsupported
+  freshness states return structured outcomes;
+- successful recall is not counted as freshness verification unless the host
+  bridge proves the referenced summary/message exists;
+- `python3 -m memorycore.cli eval --public-safe` still reports
+  `MEMORYCORE_LCM_LIVE_BACKEND` as skipped unless explicitly running local-only
+  evals.
+
+If this eval cannot be executed, the packet result must state `blocked` and
+include the missing prerequisite.
+
 ## Acceptance Criteria
 
 - Public-safe eval still passes.
@@ -68,7 +95,7 @@ python3 scripts/validate_local_lcm_adapter.py --synthetic
 Return:
 
 - changed files
+- end eval name and status
 - exact verification commands and results
 - host bridge assumptions
 - whether this packet is ready for implementation, review, or blocked
-

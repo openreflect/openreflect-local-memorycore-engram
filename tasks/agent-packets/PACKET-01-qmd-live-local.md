@@ -42,6 +42,30 @@ Do not edit:
 5. Record timeout, stderr, missing pointer, stale pointer, and unavailable-QMD
    behavior.
 
+## End Eval
+
+Named end eval: `MEMORYCORE_QMD_LIVE_BACKEND`.
+
+Executable target:
+
+```bash
+python3 scripts/validate_local_qmd_adapter.py --collection fixtures
+```
+
+The end eval passes when:
+
+- it exercises live-local QMD through an explicit mode, not fixture fallback;
+- it verifies search/get/status behavior against a safe collection or fixture
+  collection;
+- unavailable QMD, missing pointer, command error, timeout, and freshness
+  unknown states return structured outcomes;
+- `python3 -m memorycore.cli eval --public-safe` still reports
+  `MEMORYCORE_QMD_LIVE_BACKEND` as skipped unless explicitly running local-only
+  evals.
+
+If this eval cannot be executed, the packet result must state `blocked` and
+include the missing prerequisite.
+
 ## Acceptance Criteria
 
 - Public-safe eval still passes.
@@ -67,7 +91,7 @@ python3 scripts/validate_local_qmd_adapter.py --collection fixtures
 Return:
 
 - changed files
+- end eval name and status
 - exact verification commands and results
 - unresolved live-QMD questions
 - whether this packet is ready for implementation, review, or blocked
-

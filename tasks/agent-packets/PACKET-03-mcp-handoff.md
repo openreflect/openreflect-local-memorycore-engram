@@ -39,6 +39,24 @@ Do not edit:
 4. Keep audit/provenance content-sparse.
 5. Identify what is still missing before a real MCP server entrypoint exists.
 
+## End Eval
+
+Named end eval: `MEMORYCORE_MCP_SURFACE`.
+
+Executable target:
+
+```bash
+python3 scripts/validate_mvp_mcp_surface.py
+```
+
+The end eval passes when:
+
+- search, get, verify, and health tool descriptors are stable;
+- MCP-shaped calls normalize to the same core result shape as CLI requests;
+- transport wrapper differences are documented;
+- no audit/provenance path persists private snippets by default;
+- the consolidated public-safe eval includes and passes this eval.
+
 ## Acceptance Criteria
 
 - `validate_mvp_mcp_surface.py` passes.
@@ -58,7 +76,7 @@ python3 -m memorycore.cli eval --public-safe
 Return:
 
 - changed files
+- end eval name and status
 - MCP tools and argument shapes
 - exact verification commands and results
 - remaining handoff gaps
-

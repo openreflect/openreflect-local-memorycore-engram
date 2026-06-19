@@ -24,15 +24,26 @@ Verify before and after any implementation change:
 python3 -m memorycore.cli eval --public-safe
 ```
 
+Every packet is eval-driven. Each agent must name the packet's end eval in its
+final result and state one of:
+
+- `passed`
+- `blocked`
+- `not-run-by-design`
+
+If the named end eval is not executable yet, the packet's job is to create the
+smallest safe artifact that makes the eval executable later without weakening
+the public-safe baseline.
+
 ## Packets
 
-| Packet | Focus | Primary Write Scope | Blocking Rule |
-| --- | --- | --- | --- |
-| `PACKET-01-qmd-live-local.md` | QMD live-local adapter planning and first local-only eval shape | QMD adapter docs/scripts only | Do not touch LCM/MCP/OpenClaw code |
-| `PACKET-02-lcm-host-bridge.md` | Lossless-Claw host-injected adapter plan | LCM adapter docs/scripts only | Do not import OpenClaw internals |
-| `PACKET-03-mcp-handoff.md` | MCP server/tool handoff | MCP surface docs/scripts only | Preserve CLI/MCP normalized equivalence |
-| `PACKET-04-contracts-hardening.md` | API/security/observability/contracts | docs/schemas/tests for contracts | Do not change live adapter behavior |
-| `PACKET-05-integration-e2e.md` | EVAL-012/EVAL-013 planning and run-note scaffolds | smoke/e2e docs only | Do not run EVAL-012 |
+| Packet | Focus | End Eval | Primary Write Scope | Blocking Rule |
+| --- | --- | --- | --- | --- |
+| `PACKET-01-qmd-live-local.md` | QMD live-local adapter planning and first local-only eval shape | `MEMORYCORE_QMD_LIVE_BACKEND` | QMD adapter docs/scripts only | Do not touch LCM/MCP/OpenClaw code |
+| `PACKET-02-lcm-host-bridge.md` | Lossless-Claw host-injected adapter plan | `MEMORYCORE_LCM_LIVE_BACKEND` | LCM adapter docs/scripts only | Do not import OpenClaw internals |
+| `PACKET-03-mcp-handoff.md` | MCP server/tool handoff | `MEMORYCORE_MCP_SURFACE` | MCP surface docs/scripts only | Preserve CLI/MCP normalized equivalence |
+| `PACKET-04-contracts-hardening.md` | API/security/observability/contracts | `MEMORYCORE_CONTRACT_SECURITY` | docs/schemas/tests for contracts | Do not change live adapter behavior |
+| `PACKET-05-integration-e2e.md` | EVAL-012/EVAL-013 planning and run-note scaffolds | `MEMORYCORE_OPENCLAW_SMOKE` and `MEMORYCORE_E2E_GOLDEN_PATH` | smoke/e2e docs only | Do not run EVAL-012 |
 
 ## Coordination Rules
 
@@ -43,4 +54,5 @@ python3 -m memorycore.cli eval --public-safe
   in the packet result.
 - Do not run live QMD, live Lossless-Claw, or OpenClaw smoke from a packet unless
   the packet explicitly says the required approval and local-only mode exist.
-
+- A packet is not complete until its named end eval is passed, or the final
+  result explains exactly why the eval is blocked or intentionally not run.

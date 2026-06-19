@@ -38,6 +38,12 @@
   - Verify: `test -f tasks/agent-packets/PACKET-01-qmd-live-local.md && test -f tasks/agent-packets/PACKET-05-integration-e2e.md`
   - Files: `tasks/agent-packets/`
 
+- [x] Task 5b: Make parallel packets eval-driven
+  - Acceptance: every packet names its end eval, executable target or blocked
+    condition, pass criteria, and required final eval status.
+  - Verify: `rg -n "## End Eval|Named end eval" tasks/agent-packets`
+  - Files: `tasks/agent-packets/`
+
 - [x] Task 6: Scaffold discipline artifacts
   - Acceptance: context, API, sources, risk, review, threat model,
     observability, runbook, CI, ADR, performance, and migration docs exist as

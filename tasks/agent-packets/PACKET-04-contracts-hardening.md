@@ -42,6 +42,32 @@ Do not edit:
 4. Define observable event fields and forbidden fields.
 5. Identify schema gaps before live adapters expand.
 
+## End Eval
+
+Named end eval: `MEMORYCORE_CONTRACT_SECURITY`.
+
+Executable target:
+
+```bash
+python3 scripts/validate_mvp_contract_security.py
+```
+
+This eval does not exist yet. The packet should either create it or return
+`blocked` with the smallest precise reason.
+
+The end eval passes when:
+
+- request/result/error schema invariants are checked;
+- audit/provenance records are checked for forbidden private-content fields;
+- retrieved content is explicitly treated as data, not instructions;
+- observability events include allowed operational fields and exclude forbidden
+  fields by default;
+- all existing public-safe evals still pass.
+
+Until the script exists, this packet may still pass a planning milestone by
+creating a precise eval spec, but the end eval status must be
+`not-run-by-design` or `blocked`, not `passed`.
+
 ## Acceptance Criteria
 
 - Public-safe eval still passes.
@@ -62,7 +88,7 @@ Additional checks should be listed in the result if added.
 Return:
 
 - changed files
+- end eval name and status
 - review findings by severity
 - new or proposed validation checks
 - exact verification commands and results
-
