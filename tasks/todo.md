@@ -44,6 +44,13 @@
   - Verify: `rg -n "## End Eval|Named end eval" tasks/agent-packets`
   - Files: `tasks/agent-packets/`
 
+- [x] Task 5c: Create second-wave eval-driven packets
+  - Acceptance: five additional disjoint packets exist for QMD safe
+    collection, real MCP server entrypoint, public-safe golden path,
+    packaging/install, and regression review.
+  - Verify: `test -f tasks/agent-packets/PACKET-06-qmd-safe-collection.md && test -f tasks/agent-packets/PACKET-10-regression-review.md`
+  - Files: `tasks/agent-packets/`
+
 - [x] Task 6: Scaffold discipline artifacts
   - Acceptance: context, API, sources, risk, review, threat model,
     observability, runbook, CI, ADR, performance, and migration docs exist as

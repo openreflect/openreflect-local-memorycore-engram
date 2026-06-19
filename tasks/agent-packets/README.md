@@ -44,6 +44,11 @@ the public-safe baseline.
 | `PACKET-03-mcp-handoff.md` | MCP server/tool handoff | `MEMORYCORE_MCP_SURFACE` | MCP surface docs/scripts only | Preserve CLI/MCP normalized equivalence |
 | `PACKET-04-contracts-hardening.md` | API/security/observability/contracts | `MEMORYCORE_CONTRACT_SECURITY` | docs/schemas/tests for contracts | Do not change live adapter behavior |
 | `PACKET-05-integration-e2e.md` | EVAL-012/EVAL-013 planning and run-note scaffolds | `MEMORYCORE_OPENCLAW_SMOKE` and `MEMORYCORE_E2E_GOLDEN_PATH` | smoke/e2e docs only | Do not run EVAL-012 |
+| `PACKET-06-qmd-safe-collection.md` | Safe local QMD fixture collection for the blocked live-local eval | `MEMORYCORE_QMD_LIVE_BACKEND` | QMD fixture collection docs/scripts only | Do not use private memory collections |
+| `PACKET-07-real-mcp-server.md` | Real MCP server entrypoint around the existing MCP contract | `MEMORYCORE_MCP_SERVER_ENTRYPOINT` and `MEMORYCORE_MCP_SURFACE` | MCP server module/docs/validator only | Do not change adapter semantics |
+| `PACKET-08-public-safe-golden-path.md` | Public-safe CLI/MCP golden path without OpenClaw smoke execution | `MEMORYCORE_E2E_GOLDEN_PATH` | E2E fixtures/docs/validator only | Keep OpenClaw step skipped unless approved |
+| `PACKET-09-packaging-install.md` | Fresh-checkout install and packaging path | `MEMORYCORE_PACKAGE_INSTALL` | packaging/CI/README install docs only | Do not introduce runtime deps without need |
+| `PACKET-10-regression-review.md` | Independent review of integrated packet work | `MEMORYCORE_REGRESSION_REVIEW` | review docs and optional read-only validator | Do not rewrite implementation as part of review |
 
 ## Coordination Rules
 
