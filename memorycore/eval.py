@@ -35,6 +35,7 @@ PUBLIC_SAFE_EVALS = (
     EvalSpec("MEMORYCORE_AUDIT_LOG", ("scripts/validate_mvp_audit_log.py",)),
     EvalSpec("MEMORYCORE_CLI", ("scripts/validate_mvp_cli.py",)),
     EvalSpec("MEMORYCORE_MCP_SURFACE", ("scripts/validate_mvp_mcp_surface.py",)),
+    EvalSpec("MEMORYCORE_CONTRACT_SECURITY", ("scripts/validate_mvp_contract_security.py",)),
 )
 
 LOCAL_ONLY_SKIPPED = (

@@ -3,6 +3,7 @@
 Date: 2026-06-18
 Status: Draft, not executed
 Related eval: EVAL-012
+End eval: MEMORYCORE_OPENCLAW_SMOKE
 
 ## Purpose
 
@@ -21,6 +22,28 @@ receive structured output with backend id, pointer metadata, verification
 state, and audit id?
 
 The smoke is not a full MVP validation and is not an end-to-end golden path.
+
+## Current Eval Status
+
+`MEMORYCORE_OPENCLAW_SMOKE` is `not-run-by-design`.
+
+This document is a complete pre-execution template for EVAL-012, not evidence
+that EVAL-012 has run. The hard stop remains active until an approval source and
+timestamp are recorded in an actual run note.
+
+## Proposed First Caller Path
+
+Use a local MCP wrapper first.
+
+Rationale:
+
+- It exercises the same MCP-shaped MemoryCore surface planned for agent clients.
+- It can remain fixture-only and local without OpenClaw gateway mutation.
+- It avoids committing to an OpenClaw plugin packaging shape before the MCP
+  contract and public-safe eval route are stable.
+
+Do not start with an OpenClaw plugin shim unless the local MCP wrapper path is
+blocked or Mitchell explicitly selects the plugin path.
 
 ## Preconditions
 
@@ -114,6 +137,50 @@ The OpenClaw caller should be able to inspect:
 
 The exact pointer can differ by selected fixture. The structural fields should
 not.
+
+## Cleanup Rules
+
+- Write smoke audit/provenance output to a temporary or clearly named local-only
+  path recorded in the run note.
+- Do not commit smoke audit/provenance files unless they are synthetic,
+  content-sparse, and intentionally retained as public-safe evidence.
+- If smoke artifacts are retained, isolate them under an approved docs or
+  fixtures path and record why they are public-safe.
+- If smoke artifacts are temporary, delete them after the run and record cleanup
+  completion in the run note.
+- Re-run `python3 -m memorycore.cli eval --public-safe` after cleanup or
+  isolation.
+
+## EVAL-013 Golden-Path Planning
+
+Related eval: EVAL-013
+End eval: MEMORYCORE_E2E_GOLDEN_PATH
+Current status: `not-run-by-design`
+
+EVAL-013 must not run until EVAL-012 has an approved, completed, public-safe run
+note and the public-safe eval route is green.
+
+The golden path should prove the same request loops through CLI, MCP, and the
+approved OpenClaw caller path:
+
+1. Successful request loop
+   - health or route availability is inspectable;
+   - a public-safe search or verify request returns `status: ok`;
+   - the selected backend id is visible;
+   - pointer metadata is visible without private content persistence;
+   - verification state is visible;
+   - audit id and provenance pointer are inspectable from the caller boundary.
+2. Failed request loop
+   - one intentionally unsupported or missing-pointer request returns a stable
+     failure status;
+   - the error category and code are visible at each caller boundary;
+   - audit/provenance output records the failure without snippets, content,
+     citations, summaries, or transcript text;
+   - cleanup or isolation leaves public-safe evals passing.
+
+The first EVAL-013 artifact should be a run note or script plan that records the
+exact CLI command, MCP call shape, approved OpenClaw caller path, audit paths,
+cleanup action, and final public-safe eval result.
 
 ## Run Note Template
 

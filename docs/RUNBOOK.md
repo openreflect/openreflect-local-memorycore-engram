@@ -28,8 +28,65 @@ Expected baseline:
 
 Check `docs/LIVE_BACKEND_BOUNDARIES.md` first.
 
+For the local-only QMD eval, run only when the named collection is known to be
+public-safe or synthetic:
+
+```bash
+python3 scripts/validate_local_qmd_adapter.py --collection fixtures
+```
+
+Expected outcomes:
+
+- `MEMORYCORE_QMD_LIVE_BACKEND_OK`: live-local status, search, get, missing
+  pointer, unavailable-QMD, command-error, and timeout handling passed.
+- `MEMORYCORE_QMD_LIVE_BACKEND_BLOCKED`: QMD or the requested collection is
+  unavailable. Do not create, reindex, or mutate QMD collections just to force
+  the eval.
+- `MEMORYCORE_QMD_LIVE_BACKEND_INVALID`: the local adapter contract changed or
+  the safe collection did not contain expected searchable content.
+
+The local-only QMD eval is deliberately excluded from:
+
+```bash
+python3 -m memorycore.cli eval --public-safe
+```
+
 Do not run EVAL-012 unless `docs/OPENCLAW_INTEGRATION_SMOKE_PLAN.md` has an
 approved run note with the required fields.
+
+Recommended first caller path for a future approved EVAL-012 run: local MCP
+wrapper in fixture-only mode. Do not mutate OpenClaw runtime or gateway config
+as part of the first smoke.
+
+## If EVAL-013 Is Requested
+
+Check the EVAL-013 planning section in
+`docs/OPENCLAW_INTEGRATION_SMOKE_PLAN.md` first.
+
+Do not run EVAL-013 until:
+
+- EVAL-012 has an approved, completed, public-safe run note.
+- CLI and MCP public-safe routes are green.
+- The approved OpenClaw caller path is named.
+- Successful and failed request loops have expected audit/provenance fields.
+
+## If MEMORYCORE_LCM_LIVE_BACKEND Is Requested
+
+Run only the synthetic/local-only bridge eval unless a separate approval names
+a live host tool path:
+
+```bash
+python3 scripts/validate_local_lcm_adapter.py --synthetic
+```
+
+The eval must use synthetic summary/message IDs and must not call private
+Lossless-Claw transcript stores.
+
+## MCP Surface Handoff Check
+
+Run `python3 scripts/validate_mvp_mcp_surface.py` before changing MCP tool
+descriptors or the CLI/MCP wrapper mapping. The check compares MCP-shaped calls
+with equivalent CLI calls after removing only `request_id` and `audit_id`.
 
 ## Cleanup Rules
 
@@ -37,4 +94,8 @@ approved run note with the required fields.
   explicitly requires retained evidence.
 - Do not commit generated private runtime state.
 - Keep run notes public-safe unless explicitly local-only.
-
+- For EVAL-012 and EVAL-013 artifacts, record whether each audit/provenance file
+  was deleted or isolated, and re-run
+  `python3 -m memorycore.cli eval --public-safe` afterward.
+- Do not retain snippets, content, citations, summaries, transcript text,
+  account ids, or private runtime paths in committed run notes.

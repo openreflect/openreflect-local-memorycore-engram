@@ -217,6 +217,10 @@ documented preconditions are satisfied and recorded.
 
 **Acceptance criteria:**
 
+- [x] Pre-execution checklist exists as a template and does not claim execution.
+- [x] Proposed first caller path is local MCP wrapper unless blocked or
+      explicitly overridden.
+- [x] Cleanup rules for temporary smoke artifacts are documented.
 - [ ] Approval source and timestamp are recorded.
 - [ ] Caller path, backend mode, entrypoint, audit file, cleanup action, and
       stop-condition reviewer are recorded before execution.
@@ -249,10 +253,14 @@ path prove the same minimal successful and failed request loop.
 
 **Acceptance criteria:**
 
+- [x] Golden-path acceptance criteria are drafted as planning only.
 - [ ] CLI can search/get/verify/audit.
 - [ ] MCP can search/get/verify/health.
 - [ ] OpenClaw can perform at least search or verify.
-- [ ] One successful and one failed request are both inspectable in audit.
+- [ ] One successful and one failed request are both inspectable in
+      audit/provenance from each approved caller path.
+- [ ] Failed request loop exposes stable error status, category, and code.
+- [ ] Cleanup or isolation of smoke/golden-path artifacts is recorded.
 - [ ] Public-safe evals require no private content.
 
 **Verification:**
@@ -260,7 +268,7 @@ path prove the same minimal successful and failed request loop.
 - [ ] `python3 -m memorycore.cli eval --public-safe`
 - [ ] EVAL-013 result note or script output.
 
-**Dependencies:** Tasks 3, 4, 5, and 6 as scoped.
+**Dependencies:** Tasks 3, 4, 5, 6, and completed approved EVAL-012 as scoped.
 
 **Files likely touched:**
 

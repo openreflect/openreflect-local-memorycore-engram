@@ -56,13 +56,19 @@
     `.github/workflows/ci.yml`
 
 - [ ] Task 7: Execute EVAL-012 only after hard-stop lift
+  - Planning status: EVAL-012 checklist/template, proposed local MCP wrapper
+    first caller path, and cleanup rules are documented; smoke execution remains
+    blocked.
   - Acceptance: approval source, caller path, backend mode, entrypoint, audit
     path, cleanup action, and stop-condition reviewer are recorded before run.
   - Verify: completed EVAL-012 run note and public-safe evals still pass.
   - Files: `docs/OPENCLAW_INTEGRATION_SMOKE_PLAN.md`, run note, approved shim
 
 - [ ] Task 8: End-to-end public-safe golden path
+  - Planning status: EVAL-013 success/failure loop criteria are drafted;
+    execution remains blocked until approved EVAL-012 completion.
   - Acceptance: CLI, MCP, and approved OpenClaw path prove successful and failed
-    request loops with inspectable audit/provenance.
+    request loops with inspectable audit/provenance and no private persisted
+    content.
   - Verify: `python3 -m memorycore.cli eval --public-safe` plus EVAL-013 result.
   - Files: scripts, docs, selected runtime/client modules

@@ -22,11 +22,16 @@ TOOL_DEFINITIONS: tuple[dict[str, Any], ...] = (
         "input_schema": {
             "type": "object",
             "required": ["query"],
+            "additionalProperties": False,
             "properties": {
-                "query": {"type": "string"},
+                "query": {"type": "string", "minLength": 1},
                 "backend": {"type": "string", "enum": ["qmd", "lossless_claw", "mock_healthy"]},
-                "intent": {"type": "string"},
-                "limit": {"type": "integer", "minimum": 1},
+                "intent": {
+                    "type": "string",
+                    "enum": ["file_corpus_recall", "transcript_continuity_recall"],
+                    "default": "file_corpus_recall",
+                },
+                "limit": {"type": "integer", "minimum": 1, "maximum": 50, "default": 5},
             },
         },
     },
@@ -36,9 +41,10 @@ TOOL_DEFINITIONS: tuple[dict[str, Any], ...] = (
         "input_schema": {
             "type": "object",
             "required": ["pointer_id"],
+            "additionalProperties": False,
             "properties": {
-                "pointer_id": {"type": "string"},
-                "backend": {"type": "string", "enum": ["qmd", "lossless_claw", "mock_healthy"]},
+                "pointer_id": {"type": "string", "minLength": 1},
+                "backend": {"type": "string", "enum": ["qmd", "lossless_claw", "mock_healthy"], "default": "qmd"},
             },
         },
     },
@@ -48,17 +54,22 @@ TOOL_DEFINITIONS: tuple[dict[str, Any], ...] = (
         "input_schema": {
             "type": "object",
             "required": ["pointer_id"],
+            "additionalProperties": False,
             "properties": {
-                "pointer_id": {"type": "string"},
-                "backend": {"type": "string", "enum": ["qmd", "lossless_claw", "mock_healthy"]},
-                "state": {"type": "string"},
+                "pointer_id": {"type": "string", "minLength": 1},
+                "backend": {"type": "string", "enum": ["qmd", "lossless_claw", "mock_healthy"], "default": "mock_healthy"},
+                "state": {
+                    "type": "string",
+                    "enum": ["verified", "stale", "missing", "unsupported", "unknown"],
+                    "default": "verified",
+                },
             },
         },
     },
     {
         "name": "memorycore_health",
         "description": "Return MemoryCore backend health using public-safe fixture data.",
-        "input_schema": {"type": "object", "properties": {}},
+        "input_schema": {"type": "object", "additionalProperties": False, "properties": {}},
     },
 )
 
