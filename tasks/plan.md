@@ -31,16 +31,16 @@ implementation state without guessing from arbitrary docs.
 
 **Acceptance criteria:**
 
-- [ ] `SPEC.md` covers objective, commands, project structure, code style,
+- [x] `SPEC.md` covers objective, commands, project structure, code style,
       testing strategy, boundaries, success criteria, and open questions.
-- [ ] `tasks/plan.md` defines dependency-ordered phases.
-- [ ] `tasks/todo.md` tracks the actionable task list.
+- [x] `tasks/plan.md` defines dependency-ordered phases.
+- [x] `tasks/todo.md` tracks the actionable task list.
 
 **Verification:**
 
-- [ ] `test -f SPEC.md`
-- [ ] `test -f tasks/plan.md`
-- [ ] `test -f tasks/todo.md`
+- [x] `test -f SPEC.md`
+- [x] `test -f tasks/plan.md`
+- [x] `test -f tasks/todo.md`
 
 **Dependencies:** None.
 
@@ -59,17 +59,17 @@ scripts and reports pass/fail/skipped status in a machine-readable shape.
 
 **Acceptance criteria:**
 
-- [ ] `python3 -m memorycore.cli eval --public-safe` runs all current public-safe
+- [x] `python3 -m memorycore.cli eval --public-safe` runs all current public-safe
       eval scripts.
-- [ ] Output includes passed eval ids, failed eval ids, skipped local-only eval
+- [x] Output includes passed eval ids, failed eval ids, skipped local-only eval
       ids, backend availability, fixture corpus status, and audit/provenance
       record count fields.
-- [ ] Existing individual validation scripts still pass.
+- [x] Existing individual validation scripts still pass.
 
 **Verification:**
 
-- [ ] `python3 -m memorycore.cli eval --public-safe`
-- [ ] Existing README validation command sequence passes.
+- [x] `python3 -m memorycore.cli eval --public-safe`
+- [x] Existing README validation command sequence passes.
 
 **Dependencies:** Task 1.
 
@@ -84,9 +84,9 @@ scripts and reports pass/fail/skipped status in a machine-readable shape.
 
 ### Checkpoint: Workflow Surface
 
-- [ ] Canonical spec/task files exist.
-- [ ] Public-safe eval suite has one command.
-- [ ] Repo remains public-safe.
+- [x] Canonical spec/task files exist.
+- [x] Public-safe eval suite has one command.
+- [x] Repo remains public-safe.
 
 ### Phase 2: Real Backend Readiness
 
@@ -97,15 +97,15 @@ uses the existing local index or an isolated fixture collection.
 
 **Acceptance criteria:**
 
-- [ ] QMD live mode is explicitly fixture-indexed or local-indexed.
-- [ ] The result contract remains identical to fixture mode.
-- [ ] Failure modes distinguish missing source, stale pointer, unavailable QMD,
+- [x] QMD live mode is explicitly fixture-indexed or local-indexed.
+- [x] The result contract remains identical to fixture mode.
+- [x] Failure modes distinguish missing source, stale pointer, unavailable QMD,
       and unsupported verification.
 
 **Verification:**
 
-- [ ] A local-only QMD plan or eval note exists.
-- [ ] Public-safe evals still pass.
+- [x] A local-only QMD plan or eval note exists.
+- [x] Public-safe evals still pass.
 
 **Dependencies:** Task 2.
 
@@ -125,14 +125,14 @@ ids.
 
 **Acceptance criteria:**
 
-- [ ] LCM live mode is explicitly synthetic-store, mock-only, or local-only.
-- [ ] The result contract remains identical to fixture mode.
-- [ ] Unsupported verification does not overclaim freshness.
+- [x] LCM live mode is explicitly synthetic-store, mock-only, or local-only.
+- [x] The result contract remains identical to fixture mode.
+- [x] Unsupported verification does not overclaim freshness.
 
 **Verification:**
 
-- [ ] A local-only LCM plan or eval note exists.
-- [ ] Public-safe evals still pass.
+- [x] A local-only LCM plan or eval note exists.
+- [x] Public-safe evals still pass.
 
 **Dependencies:** Task 2.
 
@@ -172,7 +172,45 @@ runtime surface while keeping fixture-only and live modes distinguishable.
 
 **Estimated scope:** Medium.
 
-#### Task 6: Execute EVAL-012 only after hard-stop lift
+#### Task 6: Scaffold discipline artifacts
+
+**Description:** Add thin public-safe scaffold docs for context loading,
+contracts, source evidence, risks, review, threat model, observability, runbook,
+performance, migration, ADRs, and CI.
+
+**Acceptance criteria:**
+
+- [x] Agent context, API, source, risk, review, threat model, observability,
+      runbook, performance, migration, ADR, and CI artifacts exist.
+- [x] Artifacts are explicitly marked as scaffolds rather than completed review
+      or hardening work.
+- [x] CI runs the consolidated public-safe eval command.
+
+**Verification:**
+
+- [x] `test -f docs/API_CONTRACT.md && test -f docs/THREAT_MODEL.md && test -f .github/workflows/ci.yml`
+- [x] `python3 -m memorycore.cli eval --public-safe`
+
+**Dependencies:** Task 2.
+
+**Files touched:**
+
+- `docs/AGENT_CONTEXT.md`
+- `docs/API_CONTRACT.md`
+- `docs/SOURCES.md`
+- `docs/RISK_REGISTER.md`
+- `docs/reviews/REVIEW-2026-06-19.md`
+- `docs/THREAT_MODEL.md`
+- `docs/OBSERVABILITY.md`
+- `docs/RUNBOOK.md`
+- `docs/PERFORMANCE_BASELINE.md`
+- `docs/MIGRATION_PLAN.md`
+- `docs/adr/`
+- `.github/workflows/ci.yml`
+
+**Estimated scope:** Completed scaffold.
+
+#### Task 7: Execute EVAL-012 only after hard-stop lift
 
 **Description:** Run the first OpenClaw integration smoke only after the
 documented preconditions are satisfied and recorded.
@@ -192,7 +230,7 @@ documented preconditions are satisfied and recorded.
 - [ ] Completed EVAL-012 run note in `docs/` or another agreed location.
 - [ ] Public-safe evals still pass after smoke artifacts are cleaned or isolated.
 
-**Dependencies:** Tasks 2 and 5; explicit hard-stop lift.
+**Dependencies:** Tasks 2, 5, and 6; explicit hard-stop lift.
 
 **Files likely touched:**
 
@@ -204,7 +242,7 @@ documented preconditions are satisfied and recorded.
 
 ### Phase 4: MVP Assembly
 
-#### Task 7: End-to-end public-safe golden path
+#### Task 8: End-to-end public-safe golden path
 
 **Description:** Assemble EVAL-013 so CLI, MCP, and the selected OpenClaw smoke
 path prove the same minimal successful and failed request loop.
