@@ -1,10 +1,12 @@
 # MCP Handoff
 
-Status: fixture-only contract handoff.
+Status: fixture-only contract with a real MCP server entrypoint.
 
 MemoryCore currently exposes MCP-shaped local functions in
-`memorycore/mcp_surface.py`. It does not start an MCP server, register with an
-agent runtime, or call live QMD, Lossless-Claw, Burrow, or OpenClaw.
+`memorycore/mcp_surface.py`. `memorycore/mcp_server.py` wraps that contract in
+the Python MCP SDK's `FastMCP` server so an MCP-capable client can launch the
+same four MVP tools. The server remains fixture-only and does not call live QMD,
+Lossless-Claw, Burrow, or OpenClaw.
 
 ## Tools
 
@@ -101,22 +103,54 @@ through the shared provenance ledger contract.
 
 ## Transport Wrapper Differences
 
-The current wrapper is a local Python function contract:
+The canonical local Python function contract remains:
 
 ```python
 call_tool("memorycore_search", {"query": "alpha-river-contract-fixture"})
 ```
 
-A real MCP server entrypoint still needs to:
+The real MCP server entrypoint is:
 
-- bind `TOOL_DEFINITIONS` into the selected MCP Python server library
+```bash
+python3 -m memorycore.mcp_server --transport stdio
+```
+
+Use `--check` to validate import and tool registration without starting a
+server:
+
+```bash
+python3 -m memorycore.mcp_server --check
+```
+
+Supported launch transports are `stdio`, `sse`, and `streamable-http`. `stdio`
+is the default and is the assumed local agent launch mode for the MVP. The
+entrypoint delegates all tool behavior to `memorycore.mcp_surface.call_tool`;
+by default, audit behavior follows the existing MCP surface default. Set
+`MEMORYCORE_MCP_AUDIT_LOG` to route server audit records to an explicit path
+without changing tool arguments. Server-wrapper validation lives in:
+
+```bash
+python3 scripts/validate_mcp_server_entrypoint.py
+```
+
+FastMCP may expose an SDK-generated input schema with Pydantic metadata such as
+argument titles. `memorycore.mcp_surface.TOOL_DEFINITIONS` remains the canonical
+descriptor contract checked by `scripts/validate_mvp_mcp_surface.py`.
+
+The server wrapper now handles:
+
+- binding the four MVP tools into `mcp.server.fastmcp.FastMCP`
+- launching via a module entrypoint
+- reporting dependency status with `--check`
+- serializing surface exceptions into content-sparse structured tool errors
+
+A production MCP runtime handoff still needs to:
+
 - translate MCP request ids, session ids, and cancellation semantics into
   MemoryCore request metadata
-- serialize exceptions into structured, content-sparse MCP tool errors
 - decide where configured audit/provenance paths come from
 - define startup health behavior for fixture-only, local-only, and future live
   backend modes
-- add an operator-safe packaging and launch path
-
-Until that exists, `memorycore/mcp_surface.py` is the handoff contract, not the
-runtime server.
+- add an operator-safe packaging and install path
+- run a real MCP client compatibility smoke once packaging and launch policy are
+  settled
