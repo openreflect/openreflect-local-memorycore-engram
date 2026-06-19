@@ -32,13 +32,24 @@
   - Verify: `python3 scripts/validate_mvp_mcp_surface.py`
   - Files: `memorycore/mcp_surface.py`, MCP eval/docs
 
-- [ ] Task 6: Execute EVAL-012 only after hard-stop lift
+- [x] Task 6: Scaffold discipline artifacts
+  - Acceptance: context, API, sources, risk, review, threat model,
+    observability, runbook, CI, ADR, performance, and migration docs exist as
+    thin public-safe starting points.
+  - Verify: `test -f docs/API_CONTRACT.md && test -f docs/THREAT_MODEL.md && test -f .github/workflows/ci.yml`
+  - Files: `docs/AGENT_CONTEXT.md`, `docs/API_CONTRACT.md`, `docs/SOURCES.md`,
+    `docs/RISK_REGISTER.md`, `docs/reviews/REVIEW-2026-06-19.md`,
+    `docs/THREAT_MODEL.md`, `docs/OBSERVABILITY.md`, `docs/RUNBOOK.md`,
+    `docs/PERFORMANCE_BASELINE.md`, `docs/MIGRATION_PLAN.md`, `docs/adr/`,
+    `.github/workflows/ci.yml`
+
+- [ ] Task 7: Execute EVAL-012 only after hard-stop lift
   - Acceptance: approval source, caller path, backend mode, entrypoint, audit
     path, cleanup action, and stop-condition reviewer are recorded before run.
   - Verify: completed EVAL-012 run note and public-safe evals still pass.
   - Files: `docs/OPENCLAW_INTEGRATION_SMOKE_PLAN.md`, run note, approved shim
 
-- [ ] Task 7: End-to-end public-safe golden path
+- [ ] Task 8: End-to-end public-safe golden path
   - Acceptance: CLI, MCP, and approved OpenClaw path prove successful and failed
     request loops with inspectable audit/provenance.
   - Verify: `python3 -m memorycore.cli eval --public-safe` plus EVAL-013 result.
