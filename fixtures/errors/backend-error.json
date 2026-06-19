@@ -1,0 +1,10 @@
+{
+  "code": "MEMORYCORE_BACKEND_ERROR",
+  "category": "backend_error",
+  "message": "The backend returned a structured operational error.",
+  "verification_state": "unknown",
+  "details": {
+    "backend_id": "mock-host-bridge",
+    "operation": "get"
+  }
+}

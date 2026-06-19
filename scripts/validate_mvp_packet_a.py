@@ -36,6 +36,8 @@ ERROR_CATEGORIES = {
     "unsupported_operation",
     "missing_backend",
     "backend_unavailable",
+    "backend_timeout",
+    "backend_error",
     "pointer_missing",
     "verification_unsupported",
     "unknown_failure",

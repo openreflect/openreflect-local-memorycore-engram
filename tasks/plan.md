@@ -153,14 +153,16 @@ runtime surface while keeping fixture-only and live modes distinguishable.
 
 **Acceptance criteria:**
 
-- [ ] Tool descriptors remain stable.
-- [ ] MCP results match CLI normalized shape.
-- [ ] Audit records remain content-sparse.
+- [x] Tool descriptors remain stable.
+- [x] MCP results match CLI normalized shape.
+- [x] Audit records remain content-sparse.
+- [x] A real MCP server entrypoint can expose the MVP tools when the MCP SDK is available.
 
 **Verification:**
 
-- [ ] `python3 scripts/validate_mvp_mcp_surface.py`
-- [ ] `python3 -m memorycore.cli eval --public-safe`
+- [x] `python3 scripts/validate_mvp_mcp_surface.py`
+- [x] `python3 scripts/validate_mcp_server_entrypoint.py`
+- [x] `python3 -m memorycore.cli eval --public-safe`
 
 **Dependencies:** Task 2.
 
@@ -253,22 +255,23 @@ path prove the same minimal successful and failed request loop.
 
 **Acceptance criteria:**
 
-- [x] Golden-path acceptance criteria are drafted as planning only.
-- [ ] CLI can search/get/verify/audit.
-- [ ] MCP can search/get/verify/health.
+- [x] Golden-path acceptance criteria are drafted.
+- [x] CLI can search/get/verify/audit in the public-safe fixture path.
+- [x] MCP-shaped calls can search/get/verify/health in the public-safe fixture path.
 - [ ] OpenClaw can perform at least search or verify.
-- [ ] One successful and one failed request are both inspectable in
-      audit/provenance from each approved caller path.
-- [ ] Failed request loop exposes stable error status, category, and code.
-- [ ] Cleanup or isolation of smoke/golden-path artifacts is recorded.
-- [ ] Public-safe evals require no private content.
+- [x] One successful and one failed request are both inspectable in
+      audit/provenance from public-safe CLI and MCP-shaped caller paths.
+- [x] Failed request loop exposes stable error status, category, and code.
+- [x] Cleanup or isolation of golden-path artifacts is recorded.
+- [x] Public-safe evals require no private content.
 
 **Verification:**
 
-- [ ] `python3 -m memorycore.cli eval --public-safe`
-- [ ] EVAL-013 result note or script output.
+- [x] `python3 -m memorycore.cli eval --public-safe`
+- [x] `python3 scripts/validate_e2e_golden_path.py`
 
-**Dependencies:** Tasks 3, 4, 5, 6, and completed approved EVAL-012 as scoped.
+**Dependencies:** Tasks 3, 4, 5, and 6 for the public-safe CLI/MCP path;
+completed approved EVAL-012 remains required for the OpenClaw leg.
 
 **Files likely touched:**
 

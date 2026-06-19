@@ -180,7 +180,7 @@ def live_local_qmd_get(
             },
         )
 
-    command = [qmd_bin, "get", pointer_id, "-l", str(line_limit), "--json"]
+    command = [qmd_bin, "multi-get", pointer_id, "-l", str(line_limit), "--json"]
     completed = _run_qmd(command, timeout_seconds=timeout_seconds)
     if completed["status"] == "error":
         return _error_result(request, "get", completed["error"])
@@ -227,7 +227,10 @@ def _normalize_live_search(request: dict[str, Any], qmd_output: Any) -> dict[str
 
 
 def _normalize_live_get(request: dict[str, Any], qmd_output: Any, pointer_id: str) -> dict[str, Any]:
-    if isinstance(qmd_output, dict):
+    if isinstance(qmd_output, list) and qmd_output and isinstance(qmd_output[0], dict):
+        path = _item_pointer(qmd_output[0]) or pointer_id
+        content = _item_text(qmd_output[0], ("content", "text", "body", "markdown"))
+    elif isinstance(qmd_output, dict):
         path = _item_pointer(qmd_output) or pointer_id
         content = _item_text(qmd_output, ("content", "text", "body", "markdown"))
     else:
@@ -274,7 +277,7 @@ def _run_qmd(command: list[str], *, timeout_seconds: float) -> dict[str, Any]:
         return {"status": "error", "error": _qmd_error("backend_timeout", "QMD command timed out.", command)}
 
     if completed.returncode != 0:
-        return {"status": "error", "error": _stderr_error(completed.stderr, completed.returncode, command)}
+        return {"status": "error", "error": _stderr_error(completed.stderr or completed.stdout, completed.returncode, command)}
 
     return {"status": "ok", "stdout": completed.stdout, "stderr": completed.stderr}
 
@@ -333,7 +336,7 @@ def _item_score(item: dict[str, Any]) -> float | None:
 def _stderr_error(stderr: str, returncode: int, command: list[str]) -> dict[str, Any]:
     message = _first_line(stderr) or "QMD command failed."
     lowered = message.lower()
-    if "document not found" in lowered or "file not found" in lowered:
+    if "document not found" in lowered or "file not found" in lowered or "no files matched pattern" in lowered:
         return {
             "code": "POINTER_MISSING",
             "category": "pointer_missing",

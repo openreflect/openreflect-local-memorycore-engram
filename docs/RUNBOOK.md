@@ -4,10 +4,24 @@ Status: scaffold.
 
 ## Public-Safe Eval
 
-Run:
+From a fresh checkout, install the package in editable mode:
+
+```bash
+python3 -m venv .venv
+. .venv/bin/activate
+python3 -m pip install -e ".[eval]"
+```
+
+Run the canonical module command:
 
 ```bash
 python3 -m memorycore.cli eval --public-safe
+```
+
+The editable install also provides an equivalent console script:
+
+```bash
+memorycore eval --public-safe
 ```
 
 Expected baseline:
@@ -63,12 +77,29 @@ as part of the first smoke.
 Check the EVAL-013 planning section in
 `docs/OPENCLAW_INTEGRATION_SMOKE_PLAN.md` first.
 
-Do not run EVAL-013 until:
+Run the public-safe CLI/MCP subset with:
+
+```bash
+python3 scripts/validate_e2e_golden_path.py
+python3 -m memorycore.cli eval --public-safe
+```
+
+Expected public-safe outcomes:
+
+- `MEMORYCORE_E2E_GOLDEN_PATH_OK`
+- CLI and MCP-shaped success loops return pointer metadata, verification state,
+  and audit ids.
+- CLI and MCP-shaped failed loops expose `VERIFICATION_UNSUPPORTED` and
+  `verification_unsupported`.
+- Temporary audit/provenance records are content-sparse and deleted when the
+  validator exits.
+- OpenClaw smoke remains `not-run-by-design`.
+
+Do not run the OpenClaw caller leg of EVAL-013 until:
 
 - EVAL-012 has an approved, completed, public-safe run note.
-- CLI and MCP public-safe routes are green.
 - The approved OpenClaw caller path is named.
-- Successful and failed request loops have expected audit/provenance fields.
+- The hard stop on OpenClaw/Burrow integration execution has been lifted.
 
 ## If MEMORYCORE_LCM_LIVE_BACKEND Is Requested
 

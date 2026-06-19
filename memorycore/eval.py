@@ -36,13 +36,13 @@ PUBLIC_SAFE_EVALS = (
     EvalSpec("MEMORYCORE_CLI", ("scripts/validate_mvp_cli.py",)),
     EvalSpec("MEMORYCORE_MCP_SURFACE", ("scripts/validate_mvp_mcp_surface.py",)),
     EvalSpec("MEMORYCORE_CONTRACT_SECURITY", ("scripts/validate_mvp_contract_security.py",)),
+    EvalSpec("MEMORYCORE_E2E_GOLDEN_PATH", ("scripts/validate_e2e_golden_path.py",)),
 )
 
 LOCAL_ONLY_SKIPPED = (
     "MEMORYCORE_QMD_LIVE_BACKEND",
     "MEMORYCORE_LCM_LIVE_BACKEND",
     "MEMORYCORE_OPENCLAW_SMOKE",
-    "MEMORYCORE_E2E_GOLDEN_PATH",
 )
 
 

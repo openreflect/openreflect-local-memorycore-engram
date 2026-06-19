@@ -115,8 +115,20 @@ integration hard stop is lifted.
 Run the public-safe eval:
 
 ```bash
+python3 -m venv .venv
+. .venv/bin/activate
+python3 -m pip install -e ".[eval]"
 python3 -m memorycore.cli eval --public-safe
 ```
+
+The editable install also exposes the same CLI as a console script:
+
+```bash
+memorycore eval --public-safe
+```
+
+The direct module command remains the canonical compatibility path for agents
+and scripts that run from a checkout.
 
 Or run the individual validation scripts directly:
 

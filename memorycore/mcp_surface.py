@@ -80,6 +80,7 @@ def list_tools() -> list[dict[str, Any]]:
 
 def call_tool(tool_name: str, arguments: dict[str, Any] | None = None, *, audit_log: Path | None = None) -> dict[str, Any]:
     arguments = arguments or {}
+    _validate_tool_arguments(tool_name, arguments)
     request = _request_from_tool(tool_name, arguments)
     result = _execute_request(request)
 
@@ -89,6 +90,52 @@ def call_tool(tool_name: str, arguments: dict[str, Any] | None = None, *, audit_
         result = {**result, "audit_id": record["audit_id"]}
 
     return result
+
+
+def _validate_tool_arguments(tool_name: str, arguments: dict[str, Any]) -> None:
+    schema = _tool_schema(tool_name)
+    properties = schema.get("properties", {})
+    required = schema.get("required", [])
+    allowed = set(properties)
+
+    if schema.get("additionalProperties") is False:
+        extra = sorted(set(arguments) - allowed)
+        if extra:
+            raise ValueError(f"unexpected MCP argument(s) for {tool_name}: {', '.join(extra)}")
+
+    for key in required:
+        if key not in arguments:
+            raise ValueError(f"missing required MCP argument: {key}")
+
+    for key, value in arguments.items():
+        constraints = properties.get(key)
+        if constraints is None:
+            continue
+        expected_type = constraints.get("type")
+        if expected_type == "string":
+            if not isinstance(value, str):
+                raise ValueError(f"MCP argument {key} must be a string")
+            if constraints.get("minLength") and len(value) < constraints["minLength"]:
+                raise ValueError(f"MCP argument {key} must not be empty")
+        elif expected_type == "integer":
+            if not isinstance(value, int) or isinstance(value, bool):
+                raise ValueError(f"MCP argument {key} must be an integer")
+            minimum = constraints.get("minimum")
+            maximum = constraints.get("maximum")
+            if minimum is not None and value < minimum:
+                raise ValueError(f"MCP argument {key} must be >= {minimum}")
+            if maximum is not None and value > maximum:
+                raise ValueError(f"MCP argument {key} must be <= {maximum}")
+
+        if "enum" in constraints and value not in constraints["enum"]:
+            raise ValueError(f"MCP argument {key} has unsupported value: {value}")
+
+
+def _tool_schema(tool_name: str) -> dict[str, Any]:
+    for tool in TOOL_DEFINITIONS:
+        if tool["name"] == tool_name:
+            return tool["input_schema"]
+    raise ValueError(f"unknown MemoryCore MCP tool: {tool_name}")
 
 
 def _request_from_tool(tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:

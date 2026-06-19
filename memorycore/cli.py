@@ -73,7 +73,7 @@ def _parser() -> argparse.ArgumentParser:
     search = subparsers.add_parser("search")
     search.add_argument("query")
     search.add_argument("--backend", choices=["qmd", "lossless_claw", "mock_healthy"])
-    search.add_argument("--intent", default="file_corpus_recall")
+    search.add_argument("--intent", default="file_corpus_recall", choices=["file_corpus_recall", "transcript_continuity_recall"])
     search.add_argument("--limit", type=int, default=5)
 
     get = subparsers.add_parser("get")
@@ -83,7 +83,7 @@ def _parser() -> argparse.ArgumentParser:
     verify = subparsers.add_parser("verify")
     verify.add_argument("pointer_id")
     verify.add_argument("--backend", default="mock_healthy", choices=["qmd", "lossless_claw", "mock_healthy"])
-    verify.add_argument("--state", default="verified")
+    verify.add_argument("--state", default="verified", choices=["verified", "stale", "missing", "unsupported", "unknown"])
 
     audit = subparsers.add_parser("audit")
     audit.add_argument("--limit", type=int, default=10)
@@ -104,6 +104,8 @@ def _request_from_args(args: argparse.Namespace) -> dict[str, Any]:
     if args.command in {"list-backends", "health"}:
         return {**base, "operation": "health", "intent": "backend_health"}
     if args.command == "search":
+        if args.limit < 1 or args.limit > 50:
+            raise ValueError("search --limit must be between 1 and 50")
         return {
             **base,
             "intent": args.intent,

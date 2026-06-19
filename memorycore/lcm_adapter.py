@@ -118,23 +118,25 @@ def normalize_lcm_search(request: dict[str, Any], lcm_output: dict[str, Any]) ->
     items = []
     for rank, item in enumerate(lcm_output.get("results", []), start=1):
         pointer_id = item.get("summary_id") or item.get("message_id")
-        items.append(
-            {
-                "backend_id": BACKEND_ID,
-                "pointer": {
+        result = {
+            "backend_id": BACKEND_ID,
+            "pointer": _without_none(
+                {
                     "backend_id": BACKEND_ID,
                     "pointer_id": pointer_id,
                     "summary_id": item.get("summary_id"),
                     "message_id": item.get("message_id"),
                     "conversation_id": item.get("conversation_id"),
-                },
-                "snippet": item.get("snippet", ""),
-                "score": item.get("score"),
-                "rank": rank,
-                "recall_mode": lcm_output.get("mode", "lcm_fixture"),
-                "verification_state": "unknown",
-            }
-        )
+                }
+            ),
+            "snippet": item.get("snippet", ""),
+            "rank": rank,
+            "recall_mode": lcm_output.get("mode", "lcm_fixture"),
+            "verification_state": "unknown",
+        }
+        if item.get("score") is not None:
+            result["score"] = item["score"]
+        items.append(result)
 
     return {
         "request_id": request["request_id"],
@@ -159,12 +161,14 @@ def normalize_lcm_get(request: dict[str, Any], lcm_output: dict[str, Any]) -> di
         "results": [
             {
                 "backend_id": BACKEND_ID,
-                "pointer": {
-                    "backend_id": BACKEND_ID,
-                    "pointer_id": summary_id,
-                    "summary_id": summary_id,
-                    "conversation_id": lcm_output.get("conversation_id"),
-                },
+                "pointer": _without_none(
+                    {
+                        "backend_id": BACKEND_ID,
+                        "pointer_id": summary_id,
+                        "summary_id": summary_id,
+                        "conversation_id": lcm_output.get("conversation_id"),
+                    }
+                ),
                 "content": lcm_output["answer"],
                 "citations": lcm_output.get("citations", []),
                 "recall_mode": "expand_query_fixture",
@@ -207,13 +211,15 @@ def normalize_lcm_describe(request: dict[str, Any], lcm_output: dict[str, Any]) 
         "results": [
             {
                 "backend_id": BACKEND_ID,
-                "pointer": {
-                    "backend_id": BACKEND_ID,
-                    "pointer_id": pointer_id,
-                    "summary_id": summary_id,
-                    "message_id": message_id,
-                    "conversation_id": lcm_output.get("conversation_id"),
-                },
+                "pointer": _without_none(
+                    {
+                        "backend_id": BACKEND_ID,
+                        "pointer_id": pointer_id,
+                        "summary_id": summary_id,
+                        "message_id": message_id,
+                        "conversation_id": lcm_output.get("conversation_id"),
+                    }
+                ),
                 "verification_state": verification_state,
             }
         ],
@@ -262,3 +268,7 @@ def _host_error(category: str, message: str, tool: str) -> dict[str, Any]:
         "verification_state": "unknown",
         "details": {"tool": tool},
     }
+
+
+def _without_none(value: dict[str, Any]) -> dict[str, Any]:
+    return {key: item for key, item in value.items() if item is not None}

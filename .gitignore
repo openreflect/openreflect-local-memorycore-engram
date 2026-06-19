@@ -1,5 +1,8 @@
 node_modules/
 .venv/
+.venv-*/
+*.egg-info/
+.memorycore/
 __pycache__/
 *.pyc
 .env

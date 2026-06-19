@@ -37,7 +37,7 @@ def search_request(collection: str) -> dict[str, Any]:
         "operation": "search",
         "intent": "file_corpus_recall",
         "backend_hint": "qmd",
-        "query": "alpha-river-contract-fixture",
+        "query": "alpha river contract fixture",
         "limit": 5,
         "collection": collection,
     }

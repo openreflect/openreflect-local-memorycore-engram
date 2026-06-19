@@ -43,6 +43,26 @@ Exact live-local source-contact still needed for a passing local eval:
   in that collection.
 - One resolvable QMD pointer returned by search, verified through `qmd get`.
 
+PACKET-06 public fixture collection source-contact:
+
+- `scripts/create_qmd_fixture_collection.py --recreate` creates an isolated
+  local QMD index using `QMD_CONFIG_DIR=.memorycore/qmd-public-fixtures/config`
+  and `INDEX_PATH=.memorycore/qmd-public-fixtures/index.sqlite`, then adds only
+  committed files from `fixtures/corpus/` as collection
+  `memorycore-public-fixtures`.
+- In that isolated index, `qmd collection list` reported one collection,
+  `memorycore-public-fixtures`, with 3 files.
+- `qmd search --json -n 5 -c memorycore-public-fixtures "alpha river contract fixture"`
+  returned `qmd://memorycore-public-fixtures/project-alpha.md`.
+- `qmd get qmd://memorycore-public-fixtures/project-alpha.md --json` returned
+  markdown text rather than JSON, while
+  `qmd multi-get qmd://memorycore-public-fixtures/project-alpha.md --json`
+  returned JSON with `file`, `title`, and `body` fields. The live-local get
+  adapter therefore uses `multi-get` for single-pointer JSON retrieval.
+- Missing `multi-get` pointers return a nonzero process with
+  `No files matched pattern` on stdout; MemoryCore normalizes that as
+  `pointer_missing`.
+
 Adapter mode boundary:
 
 - Fixture mode remains the public-safe default and uses only

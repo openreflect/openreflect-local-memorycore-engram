@@ -155,13 +155,16 @@ not.
 
 Related eval: EVAL-013
 End eval: MEMORYCORE_E2E_GOLDEN_PATH
-Current status: `not-run-by-design`
+Current public-safe status: executable for the CLI/MCP fixture-only subset via
+`python3 scripts/validate_e2e_golden_path.py`.
 
-EVAL-013 must not run until EVAL-012 has an approved, completed, public-safe run
-note and the public-safe eval route is green.
+The OpenClaw caller leg of EVAL-013 must not run until EVAL-012 has an
+approved, completed, public-safe run note and the public-safe eval route is
+green.
 
-The golden path should prove the same request loops through CLI, MCP, and the
-approved OpenClaw caller path:
+The public-safe golden path proves the same request loops through CLI and
+MCP-shaped calls now, while representing the OpenClaw caller path as gated and
+not-run-by-design:
 
 1. Successful request loop
    - health or route availability is inspectable;
@@ -169,7 +172,8 @@ approved OpenClaw caller path:
    - the selected backend id is visible;
    - pointer metadata is visible without private content persistence;
    - verification state is visible;
-   - audit id and provenance pointer are inspectable from the caller boundary.
+   - audit id and provenance pointer are inspectable from the CLI/MCP caller
+     boundary.
 2. Failed request loop
    - one intentionally unsupported or missing-pointer request returns a stable
      failure status;
@@ -177,10 +181,16 @@ approved OpenClaw caller path:
    - audit/provenance output records the failure without snippets, content,
      citations, summaries, or transcript text;
    - cleanup or isolation leaves public-safe evals passing.
+3. OpenClaw gate
+   - EVAL-012 remains `not-run-by-design` until the documented hard stop is
+     lifted;
+   - no OpenClaw runtime configuration, gateway, Burrow runtime test, or
+     integration smoke is executed by the public-safe EVAL-013 validator.
 
-The first EVAL-013 artifact should be a run note or script plan that records the
-exact CLI command, MCP call shape, approved OpenClaw caller path, audit paths,
-cleanup action, and final public-safe eval result.
+The current EVAL-013 artifact is
+`scripts/validate_e2e_golden_path.py`. It records temporary audit/provenance
+files, validates CLI/MCP success and failure loops, deletes temporary artifacts
+at process exit, and leaves the OpenClaw caller path gated.
 
 ## Run Note Template
 

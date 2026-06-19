@@ -591,6 +591,16 @@ Failure meaning:
 
 ### EVAL-013: End-To-End Golden Path
 
+Current public-safe scaffold:
+
+- `scripts/validate_e2e_golden_path.py` runs the fixture-only CLI/MCP subset.
+- The validator proves health, successful search/get/verify, and failed
+  unsupported verify loops through both CLI and MCP-shaped calls.
+- Temporary audit and provenance files are inspected for pointer-first,
+  content-sparse records and deleted at process exit.
+- The OpenClaw caller leg remains gated by EVAL-012 and is represented as
+  `not-run-by-design`.
+
 Agent task:
 
 - Assemble the complete MVP loop across implemented surfaces.
@@ -613,7 +623,8 @@ Pass criteria:
 
 - CLI can search QMD, get a pointer, verify it, and show audit.
 - MCP can perform the same search/get/verify/health loop.
-- OpenClaw can perform at least search or verify through the integration path.
+- OpenClaw can perform at least search or verify through the integration path
+  after EVAL-012 is explicitly approved and run.
 - One successful and one failed request are both inspectable in audit.
 - No private content is required for public evals.
 

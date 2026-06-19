@@ -26,11 +26,12 @@
   - Verify: public-safe evals pass and local-only LCM boundary is documented.
   - Files: `docs/LIVE_BACKEND_BOUNDARIES.md`, `docs/MVP_EVAL_PLAN.md`
 
-- [ ] Task 5: Prepare MCP server/tool handoff
+- [x] Task 5: Prepare MCP server/tool handoff
   - Acceptance: MCP-shaped calls keep CLI-compatible normalized results and
-    content-sparse audit records.
-  - Verify: `python3 scripts/validate_mvp_mcp_surface.py`
-  - Files: `memorycore/mcp_surface.py`, MCP eval/docs
+    content-sparse audit records; a real MCP server entrypoint is available.
+  - Verify: `python3 scripts/validate_mvp_mcp_surface.py` and
+    `python3 scripts/validate_mcp_server_entrypoint.py`
+  - Files: `memorycore/mcp_surface.py`, `memorycore/mcp_server.py`, MCP eval/docs
 
 - [x] Task 5a: Create parallel agent planning packets
   - Acceptance: five disjoint packets exist for QMD, LCM, MCP, contracts, and
@@ -50,6 +51,15 @@
     packaging/install, and regression review.
   - Verify: `test -f tasks/agent-packets/PACKET-06-qmd-safe-collection.md && test -f tasks/agent-packets/PACKET-10-regression-review.md`
   - Files: `tasks/agent-packets/`
+
+- [x] Task 5d: Integrate second-wave packet outputs
+  - Acceptance: QMD public fixture collection path, real MCP server entrypoint,
+    public-safe golden path, package install path, and regression review are
+    integrated without running OpenClaw smoke.
+  - Verify: `python3 -m memorycore.cli eval --public-safe`,
+    `python3 scripts/validate_mcp_server_entrypoint.py`, and local-only QMD
+    validation with the isolated fixture collection.
+  - Files: `memorycore/`, `scripts/`, `docs/`, `pyproject.toml`
 
 - [x] Task 6: Scaffold discipline artifacts
   - Acceptance: context, API, sources, risk, review, threat model,
@@ -72,8 +82,9 @@
   - Files: `docs/OPENCLAW_INTEGRATION_SMOKE_PLAN.md`, run note, approved shim
 
 - [ ] Task 8: End-to-end public-safe golden path
-  - Planning status: EVAL-013 success/failure loop criteria are drafted;
-    execution remains blocked until approved EVAL-012 completion.
+  - Planning status: EVAL-013 public-safe CLI/MCP success/failure loop now
+    passes; the OpenClaw leg remains blocked until approved EVAL-012
+    completion.
   - Acceptance: CLI, MCP, and approved OpenClaw path prove successful and failed
     request loops with inspectable audit/provenance and no private persisted
     content.

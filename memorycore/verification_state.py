@@ -23,6 +23,7 @@ ERROR_CATEGORY_STATES = {
     "pointer_missing": "missing",
     "verification_unsupported": "unsupported",
     "backend_timeout": "unknown",
+    "backend_error": "unknown",
     "backend_unavailable": "unknown",
 }
 

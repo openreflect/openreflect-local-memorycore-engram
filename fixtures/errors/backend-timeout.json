@@ -1,0 +1,10 @@
+{
+  "code": "MEMORYCORE_BACKEND_TIMEOUT",
+  "category": "backend_timeout",
+  "message": "The backend did not respond before the configured timeout.",
+  "verification_state": "unknown",
+  "details": {
+    "backend_id": "mock-slow",
+    "operation": "search"
+  }
+}
