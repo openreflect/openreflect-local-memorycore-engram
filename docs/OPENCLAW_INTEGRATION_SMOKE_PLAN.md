@@ -31,6 +31,12 @@ This document is a complete pre-execution template for EVAL-012, not evidence
 that EVAL-012 has run. The hard stop remains active until an approval source and
 timestamp are recorded in an actual run note.
 
+2026-06-23 01:36 CEST heartbeat checkpoint: repo baseline was clean at
+`feb7ff4` before this documentation-only update. The smoke remains blocked
+because the run note still lacks approval source/timestamp, selected caller
+path, backend mode, exact entrypoint, audit path, cleanup action, and
+stop-condition reviewer.
+
 ## Proposed First Caller Path
 
 Use a local MCP wrapper first.
