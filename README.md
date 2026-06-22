@@ -56,6 +56,7 @@ Engram does not replace semantic search or summarization. It gives those systems
 ├── README.md
 ├── docs/
 │   ├── ARCHITECTURE.md
+│   ├── MVP_READINESS_LEDGER.md
 │   ├── MVP_EVAL_PLAN.md
 │   ├── OPENCLAW_INTEGRATION_SMOKE_PLAN.md
 │   └── PRD.md
@@ -111,6 +112,10 @@ boundary and stop conditions are documented in
 `docs/OPENCLAW_INTEGRATION_SMOKE_PLAN.md`, including the pre-execution
 checklist and run-note template that must be filled when the current
 integration hard stop is lifted.
+
+The current MVP completion state is tracked in
+`docs/MVP_READINESS_LEDGER.md`. The ledger separates complete fixture-first
+kernel work from the blocked OpenClaw smoke and the final MVP verdict.
 
 Run the public-safe eval:
 
