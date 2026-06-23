@@ -27,6 +27,23 @@ as part of this note.
 
 If any field remains `missing`, the smoke must not start.
 
+## Alice-Preparable Defaults
+
+These values can be prepared before Mitchell lifts the hard stop. They are not
+approval to run EVAL-012, and they do not change the missing fields above.
+
+| Field | Prepared default | Why this is safe before approval |
+| --- | --- | --- |
+| Caller path | local MCP wrapper | Matches the preferred first caller path in the smoke plan and avoids OpenClaw gateway mutation. |
+| Backend mode | fixture-only | Keeps the smoke away from live QMD, live Lossless-Claw, Burrow, and private memory stores. |
+| Entrypoint | `MEMORYCORE_MCP_AUDIT_LOG=<tmp-jsonl> python3 -m memorycore.mcp_server --transport stdio` | Uses the existing MCP server entrypoint; the exact temp audit path still must be chosen at run time. |
+| Audit file path | temporary local-only JSONL outside committed fixtures | Prevents accidental retention of smoke artifacts until cleanup or isolation is inspected. |
+| Cleanup action | delete temporary audit/provenance artifacts unless explicitly retained as synthetic evidence | Preserves the public/private boundary and keeps the repo from carrying unreviewed smoke output. |
+| Stop-condition reviewer | Alice first, Mitchell only if approval scope or private-content risk changes | Lets Alice stop the smoke on documented safety conditions without turning every normal observation into a Mitchell decision. |
+
+The only Mitchell-only field is the approval source/timestamp lifting the current
+integration hard stop, unless he chooses a different caller path or backend mode.
+
 ## Intended First Run Shape
 
 The preferred first caller path is the local MCP wrapper in fixture-only mode,
