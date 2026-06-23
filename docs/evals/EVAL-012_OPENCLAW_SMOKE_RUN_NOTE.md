@@ -44,6 +44,21 @@ approval to run EVAL-012, and they do not change the missing fields above.
 The only Mitchell-only field is the approval source/timestamp lifting the current
 integration hard stop, unless he chooses a different caller path or backend mode.
 
+## Approval-Time Fill Order
+
+When the hard stop is lifted, fill the required fields in this order before any
+command starts:
+
+1. Record the approval source and timestamp.
+2. Copy or revise the selected caller path and backend mode from the prepared
+   defaults above.
+3. Choose the exact temporary audit file path.
+4. Confirm the entrypoint command with that audit path inserted.
+5. Confirm cleanup action and stop-condition reviewer.
+
+If approval changes the caller path, backend mode, or artifact handling, re-check
+the stop conditions in the smoke plan before starting.
+
 ## Intended First Run Shape
 
 The preferred first caller path is the local MCP wrapper in fixture-only mode,
