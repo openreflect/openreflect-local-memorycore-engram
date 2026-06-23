@@ -71,6 +71,19 @@ The smallest approved call set should be:
 3. `memorycore_verify` against a mock-supported pointer
 4. one structured failure, such as unsupported QMD verify
 
+## Commands Not To Run During Prep
+
+These commands remain out of scope until the hard stop is explicitly lifted and
+all required pre-execution fields are filled:
+
+- `python3 -m memorycore.cli eval --public-safe`
+- any command that starts OpenClaw, Burrow, or the OpenClaw gateway
+- any live QMD or live Lossless-Claw adapter invocation
+- any smoke command that writes audit/provenance artifacts without a recorded
+  temporary path and cleanup decision
+
+Prep work may continue by editing plans, fixtures, contracts, and run notes.
+
 ## Calls
 
 | Call | Status | Selected backend | Pointer or reason | Verification state | Audit id |
