@@ -35,7 +35,7 @@ isolation.
 | CLI surface | Complete for public-safe MVP kernel | `memorycore/cli.py`, `memorycore/eval.py`, `README.md` | Re-run public-safe evals after EVAL-012 cleanup or artifact isolation. |
 | MCP surface and server entrypoint | Complete for local public-safe handoff | `memorycore/mcp_surface.py`, `memorycore/mcp_server.py`, `docs/MCP_HANDOFF.md` | EVAL-012 must select the actual OpenClaw caller path before execution. |
 | Public-safe golden path | Partial | `scripts/validate_e2e_golden_path.py`, EVAL-013 notes in `docs/MVP_EVAL_PLAN.md` | OpenClaw caller leg remains gated on EVAL-012. |
-| OpenClaw integration smoke | Blocked by design | `docs/OPENCLAW_INTEGRATION_SMOKE_PLAN.md` | Requires explicit hard-stop lift, approval source/timestamp, caller path, backend mode, entrypoint, audit path, cleanup action, and stop-condition reviewer. |
+| OpenClaw integration smoke | Blocked by design | `docs/OPENCLAW_INTEGRATION_SMOKE_PLAN.md`, `docs/evals/EVAL-012_OPENCLAW_SMOKE_RUN_NOTE.md` | Requires explicit hard-stop lift, approval source/timestamp, caller path, backend mode, entrypoint, audit path, cleanup action, and stop-condition reviewer. |
 | Final MVP verdict | Blocked | Assessment reports and this ledger | Requires approved EVAL-012 result plus green public-safe eval route afterward. |
 
 ## Not MVP Claims Yet

@@ -37,6 +37,11 @@ because the run note still lacks approval source/timestamp, selected caller
 path, backend mode, exact entrypoint, audit path, cleanup action, and
 stop-condition reviewer.
 
+2026-06-23 02:15 CEST heartbeat checkpoint: added the non-executed run-note
+stub at `docs/evals/EVAL-012_OPENCLAW_SMOKE_RUN_NOTE.md`. The smoke is still
+`not-run-by-design`; the stub records all missing pre-execution fields instead
+of starting or simulating the integration.
+
 ## Proposed First Caller Path
 
 Use a local MCP wrapper first.
