@@ -12,6 +12,10 @@ The current hard stop remains active. Do not run Burrow runtime tests, OpenClaw
 integration tests, live OpenClaw gateway calls, or the public-safe eval runner
 as part of this note.
 
+Prep checkpoint, 2026-06-23T17:59Z: the repo was clean before this
+documentation-only update, all required execution fields below remained
+`missing`, and no runtime, gateway, live-backend, or eval command was run.
+
 ## Required Before Execution
 
 | Field | Value |
