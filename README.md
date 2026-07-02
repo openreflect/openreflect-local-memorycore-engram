@@ -103,6 +103,105 @@ Engram does not replace semantic search or summarization. It gives those systems
     └── validate_mvp_router.py
 ```
 
+## Feature treemap
+
+A hierarchical map of features and subfeatures, both implemented and planned, compiled from the project docs (SPEC, PRD, software spec, roadmap, risk register, threat model, research notes).
+
+Legend: `[✔] done` · `[◐] partial` · `[○] planned` · `[·] implied-only (mentioned once in research/roadmap)`
+
+```text
+ENGRAM / MEMORYCORE
+│
+├── 1. MEMORY RECORDS & SCHEMAS
+│   ├── [✔] Request / result / error / backend JSON contracts
+│   ├── [✔] Contract-security drift eval
+│   ├── [◐] Memory-record contract (schema done; rich typed records planned)
+│   ├── [◐] Provenance pointer model (basic done; commit/diff/line-range fields planned)
+│   ├── [○] Source-artifact model (path+hash, commit, transcript, tool-call, import)
+│   ├── [○] Derived-observation model (deductive/inductive/abductive, confidence)
+│   ├── [○] Summary model (DAG parents, covered range, source-set hash)
+│   ├── [○] Context-packet model (assembled context + omission diagnostics)
+│   ├── [○] Storage layer (SQLite+WAL+FTS5, ~17 tables; Postgres later)
+│   └── [·] Normalized record envelope for the memory fabric
+│
+├── 2. PROVENANCE & VERIFICATION            ← the product's core bet
+│   ├── [✔] Provenance pointer ledger
+│   ├── [✔] Verification states (verified/stale/missing/unsupported/unknown)
+│   ├── [✔] "Never present unknown as verified" rule
+│   ├── [○] Git-native provenance engine
+│   │   ├── [○] Commit pointers & content hashes
+│   │   ├── [○] Diff-based staleness checks
+│   │   ├── [○] Branchable reasoning experiments
+│   │   ├── [○] Tags as semantic milestones
+│   │   ├── [○] Blame/log inspection
+│   │   └── [○] Exportable evidence bundles
+│   └── [·] Cross-backend verification semantics (per-backend proof rules)
+│
+├── 3. BACKEND ROUTING & ADAPTERS           ← the "virtualization" layer
+│   ├── [✔] Backend registry, capability probe, health
+│   ├── [✔] Request normalization + deterministic intent routing
+│   ├── [✔] Mock backend + fixtures
+│   ├── [◐] QMD adapter (fixtures done; live-local shell-out partial)
+│   ├── [◐] Lossless-Claw (LCM) adapter (fixtures done; host bridge partial)
+│   ├── [○] Backend control ops (register, doctor, reindex, observe-only)
+│   ├── [○] Mirroring & splitting policies (one event → many backends)
+│   ├── [○] Honcho adapter (peer/session reasoning)
+│   ├── [○/·] Gated write & import adapters (append-only, policy-routed)
+│   ├── [·] gbrain adapter (knowledge-brain pages)
+│   └── [·] Backend classes taxonomy (corpus / transcript / peer / brain / fabric)
+│
+├── 4. INTERFACES
+│   ├── [✔] CLI (search, get, verify, health, audit, backends)
+│   ├── [✔] Consolidated eval command (memorycore eval --public-safe)
+│   ├── [✔] MCP tool surface + real FastMCP server (stdio/sse/http)
+│   ├── [◐] OpenClaw integration (gated behind EVAL-012 hard stop)
+│   ├── [○] Production MCP handoff (session ids, cancellation, packaging)
+│   ├── [○] Full CLI verbs (init, ingest, index, recall, context, doctor…)
+│   ├── [○] HTTP/REST API + SDK primitives
+│   ├── [○] Operator UI (summary-DAG viewer, provenance drilldown, doctor)
+│   ├── [○] Hermes / Codex / desktop-app plugin paths
+│   └── [·] Nontraditional substrates (Notion, Drive, S3, spreadsheets…)
+│
+├── 5. RETRIEVAL, CONTEXT & REASONING       ← full-product ambition, nearly all planned
+│   ├── [○] Indexing engine (chunking, BM25+vector hybrid, rerank, doctor)
+│   ├── [○] Transcript/context engine (fresh tail, summary DAG, deep recall)
+│   ├── [○] Reasoning engine (async observation extraction, peer cards)
+│   └── [○] Insight-plugin lane (scoped mining jobs, privacy gates)
+│
+├── 6. EVALUATION & VALIDATION
+│   ├── [✔] 13+ deterministic public-safe validators + consolidated runner
+│   ├── [✔] Fixture corpus (8 families) + CI on every push
+│   ├── [✔] Parallel agent work packets (PACKET-01…10)
+│   ├── [◐] E2E golden path (CLI+MCP pass; OpenClaw leg blocked)
+│   ├── [◐] Local-only live evals (QMD, LCM; skipped in public runs)
+│   ├── [○] EVAL-012 OpenClaw smoke (planned, hard-stopped, template ready)
+│   └── [○] pytest bridge
+│
+├── 7. OBSERVABILITY & OPS
+│   ├── [✔] Content-sparse audit log (deny-listed private fields)
+│   ├── [✔] Backend health + graceful degradation
+│   ├── [◐] Observability event vocabulary (allowlist/denylist defined)
+│   ├── [◐] Runbook, performance baseline, migration plan (scaffolds)
+│   ├── [○] Full doctor checks (index integrity, stale embeddings, DAG health)
+│   └── [○] Cost/token & spend diagnostics
+│
+├── 8. SECURITY & PRIVACY
+│   ├── [✔] Content-sparse persistence contract (no snippets/secrets at rest)
+│   ├── [✔] Verification-misrepresentation controls
+│   ├── [◐] Retrieved-content-is-untrusted rule (prompt-injection control)
+│   ├── [◐] Live-command allowlisting, timeouts, redacted logging
+│   ├── [◐] Public/private boundary discipline + trust-boundary map
+│   ├── [○] Per-record privacy classes, secret scanning, export audit
+│   └── [○] Pre-release leak checks
+│
+└── 9. ROADMAP HORIZONS
+    ├── [◐] v0.1  Control-plane foundation (mostly the ✔/◐ items above)
+    ├── [○] v0.1.5 Hermes path, contract hardening, gated writes
+    ├── [○] v0.2  Insight plugins, mirroring/splitting, Codex path
+    └── [○] Later  Backup/migration, identity mapping, visualization,
+                   Postgres/hosted sync, memory-fabric expansion
+```
+
 ## Current status
 
 OpenReflect-Local-MemoryCore-Engram is staged as a public skeleton. The current implementation defines the product frame, architecture, synthetic memory-record schema, and deterministic validation.
