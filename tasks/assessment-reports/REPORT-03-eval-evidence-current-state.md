@@ -40,7 +40,7 @@ an end-to-end QMD/Lossless-Claw/OpenClaw/MCP loop.
 
 All commands were run from:
 
-`/home/alice/workbench/openreflect/openreflect-local-memorycore-engram`
+`~/workbench/openreflect/openreflect-local-memorycore-engram`
 
 ### Consolidated Public-Safe Eval
 

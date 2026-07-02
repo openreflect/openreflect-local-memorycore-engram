@@ -15,14 +15,14 @@ Local source roots:
 
 Live wiring evidence:
 
-- OpenClaw memory backend is `qmd`: `/home/alice/.openclaw/openclaw.json:584`
-- OpenClaw plugin slot `contextEngine` is `lossless-claw`: `/home/alice/.openclaw/openclaw.json:607`
-- OpenClaw plugin slot `memory` is `openclaw-honcho`: `/home/alice/.openclaw/openclaw.json:607`
-- `memory-core` is disabled while `openclaw-honcho` is enabled: `/home/alice/.openclaw/openclaw.json:656`, `/home/alice/.openclaw/openclaw.json:660`
-- Honcho endpoint is local HTTP, workspace `openclaw`: `/home/alice/.openclaw/openclaw.json:666`
-- QMD live index has three configured collections: `/home/alice/.config/qmd/index.yml:1`
+- OpenClaw memory backend is `qmd`: `~/.openclaw/openclaw.json:584`
+- OpenClaw plugin slot `contextEngine` is `lossless-claw`: `~/.openclaw/openclaw.json:607`
+- OpenClaw plugin slot `memory` is `openclaw-honcho`: `~/.openclaw/openclaw.json:607`
+- `memory-core` is disabled while `openclaw-honcho` is enabled: `~/.openclaw/openclaw.json:656`, `~/.openclaw/openclaw.json:660`
+- Honcho endpoint is local HTTP, workspace `openclaw`: `~/.openclaw/openclaw.json:666`
+- QMD live index has three configured collections: `~/.config/qmd/index.yml:1`
 
-Live QMD state checked from `/home/alice/.cache/qmd/index.sqlite`:
+Live QMD state checked from `~/.cache/qmd/index.sqlite`:
 
 - `store_collections`: 3
 - active `documents`: 1546
@@ -63,9 +63,9 @@ Source:
 
 Live configuration:
 
-- `memory`: `/home/alice/.openclaw/workspace/memory`, `**/*.md`, excluding session-ingest/live/full JSONL-derived material
-- `openclaw-docs`: `/home/alice/.openclaw/workspace/openclaw-docs`, `**/*.md`
-- `workspace-research`: `/home/alice/.openclaw/workspace/{analysis,reports,notes,references}/**/*.md`
+- `memory`: `~/.openclaw/workspace/memory`, `**/*.md`, excluding session-ingest/live/full JSONL-derived material
+- `openclaw-docs`: `~/.openclaw/workspace/openclaw-docs`, `**/*.md`
+- `workspace-research`: `~/.openclaw/workspace/{analysis,reports,notes,references}/**/*.md`
 
 ### QMD-003: Path and Collection Context
 
@@ -460,7 +460,7 @@ Daily use:
 The live Alice config sets `LCM_FRESH_TAIL_COUNT=32`, meaning recent conversational texture stays raw while older content becomes summarized.
 
 Source:
-`lossless-claw/README.md:191`, `lossless-claw/README.md:296`, `/home/alice/.openclaw/openclaw.json:14`
+`lossless-claw/README.md:191`, `lossless-claw/README.md:296`, `~/.openclaw/openclaw.json:14`
 
 ### LCM-011: Leaf Compaction
 
@@ -493,7 +493,7 @@ Daily use:
 The live Alice config sets `LCM_CONTEXT_THRESHOLD=0.78`.
 
 Source:
-`lossless-claw/README.md:190`, `lossless-claw/README.md:299`, `lossless-claw/docs/architecture.md:85`, `/home/alice/.openclaw/openclaw.json:15`
+`lossless-claw/README.md:190`, `lossless-claw/README.md:299`, `lossless-claw/docs/architecture.md:85`, `~/.openclaw/openclaw.json:15`
 
 ### LCM-014: Deferred Maintenance Mode
 
@@ -526,7 +526,7 @@ Daily use:
 The live config routes summary, large-file summary, and expansion to `openai-codex/gpt-5.4-mini`.
 
 Source:
-`lossless-claw/README.md:179`, `lossless-claw/README.md:204`, `lossless-claw/README.md:210`, `/home/alice/.openclaw/openclaw.json:18`
+`lossless-claw/README.md:179`, `lossless-claw/README.md:204`, `lossless-claw/README.md:210`, `~/.openclaw/openclaw.json:18`
 
 ### LCM-017: Three-Level Summarization Escalation
 
@@ -662,7 +662,7 @@ Daily use:
 Live config ignores `cron:*` and treats `subagent:*` as stateless.
 
 Source:
-`lossless-claw/README.md:328`, `lossless-claw/README.md:369`, `/home/alice/.openclaw/openclaw.json:25`
+`lossless-claw/README.md:328`, `lossless-claw/README.md:369`, `~/.openclaw/openclaw.json:25`
 
 ### LCM-029: Cron Runtime Isolation
 
@@ -796,7 +796,7 @@ Daily use:
 Live OpenClaw is configured to use Honcho workspace `openclaw`.
 
 Source:
-`honcho/README.md:246`, `honcho/README.md:577`, `/home/alice/.openclaw/openclaw.json:667`
+`honcho/README.md:246`, `honcho/README.md:577`, `~/.openclaw/openclaw.json:667`
 
 ### HON-004: Peers
 
@@ -1137,7 +1137,7 @@ Daily use:
 Live OpenClaw is configured against local `http://127.0.0.1:18001`.
 
 Source:
-`honcho/README.md:18`, `honcho/README.md:292`, `honcho/README.md:434`, `/home/alice/.openclaw/openclaw.json:666`
+`honcho/README.md:18`, `honcho/README.md:292`, `honcho/README.md:434`, `~/.openclaw/openclaw.json:666`
 
 ### HON-035: Queue and Reconciliation System
 

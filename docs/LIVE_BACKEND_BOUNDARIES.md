@@ -32,7 +32,7 @@ functionality.
 Local QMD is available on this machine:
 
 ```bash
-/home/alice/.npm-global/bin/qmd
+~/.npm-global/bin/qmd
 ```
 
 Observed CLI capabilities from `qmd --help`:
