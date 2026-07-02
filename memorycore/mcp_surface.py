@@ -12,7 +12,35 @@ from pathlib import Path
 from typing import Any
 
 from memorycore.audit_log import append_record, build_audit_record
-from memorycore.cli import DEFAULT_AUDIT_LOG, _execute_request
+from memorycore.cache_router import (
+    DEFAULT_ROUTING,
+    CacheStore,
+    cache_read,
+    cache_search,
+    cache_write,
+    flush_pending,
+)
+from memorycore.cli import DEFAULT_AUDIT_LOG, ROOT, _execute_request
+
+
+DEFAULT_CACHE_DB = ROOT / ".memorycore" / "cache.sqlite3"
+
+# Fixture-only flush acknowledgments. Real backend flush handlers arrive with
+# the gated write adapters; until then flushes are marked fixture-only.
+FIXTURE_FLUSH_BACKENDS = {
+    "qmd": lambda record: {"status": "ok"},
+    "lossless_claw": lambda record: {"status": "ok"},
+    "mock_healthy": lambda record: {"status": "ok"},
+}
+
+CACHE_TOOL_NAMES = frozenset(
+    {
+        "memorycore_remember",
+        "memorycore_recall",
+        "memorycore_cache_search",
+        "memorycore_flush",
+    }
+)
 
 
 TOOL_DEFINITIONS: tuple[dict[str, Any], ...] = (
@@ -71,6 +99,66 @@ TOOL_DEFINITIONS: tuple[dict[str, Any], ...] = (
         "description": "Return MemoryCore backend health using public-safe fixture data.",
         "input_schema": {"type": "object", "additionalProperties": False, "properties": {}},
     },
+    {
+        "name": "memorycore_remember",
+        "description": "Write a content-sparse memory record into the local cache, routed by memory type.",
+        "input_schema": {
+            "type": "object",
+            "required": ["memory_type", "content_ref"],
+            "additionalProperties": False,
+            "properties": {
+                "memory_type": {"type": "string", "enum": ["file_corpus", "transcript"]},
+                "content_ref": {"type": "string", "minLength": 1},
+                "pointer_id": {"type": "string", "minLength": 1},
+                "summary_id": {"type": "string", "minLength": 1},
+                "verification": {
+                    "type": "string",
+                    "enum": ["verified", "stale", "missing", "unsupported", "unknown"],
+                    "default": "unknown",
+                },
+                "client": {"type": "string", "enum": ["mcp", "openclaw"], "default": "mcp"},
+            },
+        },
+    },
+    {
+        "name": "memorycore_recall",
+        "description": "Read a memory record from the local cache by record id or pointer id.",
+        "input_schema": {
+            "type": "object",
+            "additionalProperties": False,
+            "properties": {
+                "record_id": {"type": "string", "minLength": 1},
+                "pointer_id": {"type": "string", "minLength": 1},
+                "client": {"type": "string", "enum": ["mcp", "openclaw"], "default": "mcp"},
+            },
+        },
+    },
+    {
+        "name": "memorycore_cache_search",
+        "description": "Search cached memory records only; does not query live backends.",
+        "input_schema": {
+            "type": "object",
+            "required": ["query"],
+            "additionalProperties": False,
+            "properties": {
+                "query": {"type": "string", "minLength": 1},
+                "memory_type": {"type": "string", "enum": ["file_corpus", "transcript"]},
+                "limit": {"type": "integer", "minimum": 1, "maximum": 50, "default": 5},
+                "client": {"type": "string", "enum": ["mcp", "openclaw"], "default": "mcp"},
+            },
+        },
+    },
+    {
+        "name": "memorycore_flush",
+        "description": "Flush pending cached records to their routed backends (fixture-only handlers).",
+        "input_schema": {
+            "type": "object",
+            "additionalProperties": False,
+            "properties": {
+                "client": {"type": "string", "enum": ["mcp", "openclaw"], "default": "mcp"},
+            },
+        },
+    },
 )
 
 
@@ -78,9 +166,23 @@ def list_tools() -> list[dict[str, Any]]:
     return [dict(tool) for tool in TOOL_DEFINITIONS]
 
 
-def call_tool(tool_name: str, arguments: dict[str, Any] | None = None, *, audit_log: Path | None = None) -> dict[str, Any]:
+def call_tool(
+    tool_name: str,
+    arguments: dict[str, Any] | None = None,
+    *,
+    audit_log: Path | None = None,
+    cache_db: Path | None = None,
+) -> dict[str, Any]:
     arguments = arguments or {}
     _validate_tool_arguments(tool_name, arguments)
+
+    if tool_name in CACHE_TOOL_NAMES:
+        request = _cache_request_from_tool(tool_name, arguments)
+        result = _execute_cache_request(request, arguments, cache_db or DEFAULT_CACHE_DB)
+        record = build_audit_record(request, result, timestamp=_timestamp())
+        append_record(audit_log or DEFAULT_AUDIT_LOG, record)
+        return {**result, "audit_id": record["audit_id"]}
+
     request = _request_from_tool(tool_name, arguments)
     result = _execute_request(request)
 
@@ -90,6 +192,119 @@ def call_tool(tool_name: str, arguments: dict[str, Any] | None = None, *, audit_
         result = {**result, "audit_id": record["audit_id"]}
 
     return result
+
+
+def _cache_request_from_tool(tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+    client = arguments.get("client", "mcp")
+    suffix = tool_name.removeprefix("memorycore_")
+    operations = {
+        "remember": "cache_write",
+        "recall": "cache_read",
+        "cache_search": "cache_search",
+        "flush": "cache_flush",
+    }
+    if tool_name == "memorycore_recall" and not (arguments.get("record_id") or arguments.get("pointer_id")):
+        raise ValueError("memorycore_recall requires record_id or pointer_id")
+    return {
+        "request_id": f"req_{client}_{suffix}",
+        "client_surface": client,
+        "operation": operations[suffix],
+    }
+
+
+def _execute_cache_request(
+    request: dict[str, Any],
+    arguments: dict[str, Any],
+    cache_db: Path,
+) -> dict[str, Any]:
+    cache_db.parent.mkdir(parents=True, exist_ok=True)
+    store = CacheStore(cache_db)
+    try:
+        operation = request["operation"]
+        if operation == "cache_write":
+            return _cache_write_result(request, arguments, store)
+        if operation == "cache_read":
+            return _cache_read_result(request, arguments, store)
+        if operation == "cache_search":
+            records = cache_search(store, arguments["query"], memory_type=arguments.get("memory_type"))
+            records = records[: int(arguments.get("limit", 5))]
+            return _ok_cache_result(request, [_cache_item(record) for record in records])
+        if operation == "cache_flush":
+            flushed = flush_pending(store, FIXTURE_FLUSH_BACKENDS, timestamp=_timestamp())
+            result = _ok_cache_result(request, [_cache_item(record) for record in flushed])
+            return {**result, "flush_mode": "fixture-only"}
+        raise ValueError(f"unknown cache operation: {operation}")
+    finally:
+        store.close()
+
+
+def _cache_write_result(request: dict[str, Any], arguments: dict[str, Any], store: CacheStore) -> dict[str, Any]:
+    memory_type = arguments["memory_type"]
+    content_ref = arguments["content_ref"]
+    backend_id = DEFAULT_ROUTING[memory_type][0]
+    pointer: dict[str, Any] = {"backend_id": backend_id}
+    if memory_type == "transcript":
+        pointer["summary_id"] = arguments.get("summary_id") or content_ref
+    pointer["pointer_id"] = arguments.get("pointer_id") or content_ref
+
+    record = cache_write(
+        store,
+        {
+            "memory_type": memory_type,
+            "content_ref": content_ref,
+            "source_pointer": pointer,
+            "verification": arguments.get("verification", "unknown"),
+        },
+        timestamp=_timestamp(),
+    )
+    result = _ok_cache_result(request, [_cache_item(record)])
+    return {**result, "selected_backend": backend_id}
+
+
+def _cache_read_result(request: dict[str, Any], arguments: dict[str, Any], store: CacheStore) -> dict[str, Any]:
+    record = cache_read(
+        store,
+        record_id=arguments.get("record_id"),
+        pointer_id=None if arguments.get("record_id") else arguments.get("pointer_id"),
+    )
+    if record is None:
+        return {
+            "request_id": request["request_id"],
+            "operation": request["operation"],
+            "status": "error",
+            "results": [],
+            "verification_state": "missing",
+            "error": {
+                "code": "CACHE_MISS",
+                "category": "pointer_missing",
+                "message": "No cached record matches the requested id.",
+                "verification_state": "missing",
+            },
+        }
+    return _ok_cache_result(request, [_cache_item(record)])
+
+
+def _ok_cache_result(request: dict[str, Any], items: list[dict[str, Any]]) -> dict[str, Any]:
+    states = {item["verification_state"] for item in items}
+    return {
+        "request_id": request["request_id"],
+        "operation": request["operation"],
+        "status": "ok",
+        "results": items,
+        "verification_state": states.pop() if len(states) == 1 else "unknown",
+    }
+
+
+def _cache_item(record: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "backend_id": record["source_pointer"].get("backend_id"),
+        "pointer": record["source_pointer"],
+        "verification_state": record["verification"],
+        "record_id": record["record_id"],
+        "memory_type": record["memory_type"],
+        "content_ref": record["content_ref"],
+        "flush_state": record["flush_state"],
+    }
 
 
 def _validate_tool_arguments(tool_name: str, arguments: dict[str, Any]) -> None:

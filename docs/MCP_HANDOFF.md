@@ -70,6 +70,15 @@ Maps to canonical request fields:
 - `client_surface: "mcp"`
 - `intent: "backend_health"`
 
+### Cache tools
+
+`memorycore_remember`, `memorycore_recall`, `memorycore_cache_search`, and
+`memorycore_flush` expose the caching memory router
+(docs/CACHING_MEMORY_ROUTER.md) on this surface. Their argument and result
+contract, OpenClaw client-surface handling, and fixture-only flush boundary
+are documented in docs/CACHE_API_OPENCLAW.md and validated by
+`scripts/validate_mvp_cache_api.py`.
+
 ## Result Equivalence
 
 `scripts/validate_mvp_mcp_surface.py` compares MCP-shaped calls against

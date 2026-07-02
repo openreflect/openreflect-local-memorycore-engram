@@ -97,11 +97,83 @@ def _register_tools(server: Any) -> None:
     def memorycore_health() -> dict[str, Any]:
         return _call_surface("memorycore_health", {})
 
+    @server.tool(
+        name="memorycore_remember",
+        description=by_name["memorycore_remember"]["description"],
+        structured_output=False,
+    )
+    def memorycore_remember(
+        memory_type: str,
+        content_ref: str,
+        pointer_id: str | None = None,
+        summary_id: str | None = None,
+        verification: str = "unknown",
+        client: str = "mcp",
+    ) -> dict[str, Any]:
+        arguments: dict[str, Any] = {
+            "memory_type": memory_type,
+            "content_ref": content_ref,
+            "verification": verification,
+            "client": client,
+        }
+        if pointer_id is not None:
+            arguments["pointer_id"] = pointer_id
+        if summary_id is not None:
+            arguments["summary_id"] = summary_id
+        return _call_surface("memorycore_remember", arguments)
+
+    @server.tool(
+        name="memorycore_recall",
+        description=by_name["memorycore_recall"]["description"],
+        structured_output=False,
+    )
+    def memorycore_recall(
+        record_id: str | None = None,
+        pointer_id: str | None = None,
+        client: str = "mcp",
+    ) -> dict[str, Any]:
+        arguments: dict[str, Any] = {"client": client}
+        if record_id is not None:
+            arguments["record_id"] = record_id
+        if pointer_id is not None:
+            arguments["pointer_id"] = pointer_id
+        return _call_surface("memorycore_recall", arguments)
+
+    @server.tool(
+        name="memorycore_cache_search",
+        description=by_name["memorycore_cache_search"]["description"],
+        structured_output=False,
+    )
+    def memorycore_cache_search(
+        query: str,
+        memory_type: str | None = None,
+        limit: int = 5,
+        client: str = "mcp",
+    ) -> dict[str, Any]:
+        arguments: dict[str, Any] = {"query": query, "limit": limit, "client": client}
+        if memory_type is not None:
+            arguments["memory_type"] = memory_type
+        return _call_surface("memorycore_cache_search", arguments)
+
+    @server.tool(
+        name="memorycore_flush",
+        description=by_name["memorycore_flush"]["description"],
+        structured_output=False,
+    )
+    def memorycore_flush(client: str = "mcp") -> dict[str, Any]:
+        return _call_surface("memorycore_flush", {"client": client})
+
 
 def _call_surface(tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:
     try:
         audit_log = os.environ.get("MEMORYCORE_MCP_AUDIT_LOG")
-        return call_tool(tool_name, arguments, audit_log=Path(audit_log) if audit_log else None)
+        cache_db = os.environ.get("MEMORYCORE_CACHE_DB")
+        return call_tool(
+            tool_name,
+            arguments,
+            audit_log=Path(audit_log) if audit_log else None,
+            cache_db=Path(cache_db) if cache_db else None,
+        )
     except Exception as exc:  # noqa: BLE001 - MCP boundary returns structured errors.
         return _server_error(tool_name, exc)
 

@@ -58,6 +58,44 @@ EXPECTED_TOOLS: dict[str, dict[str, Any]] = {
         "required": [],
         "properties": {},
     },
+    "memorycore_remember": {
+        "required": ["memory_type", "content_ref"],
+        "properties": {
+            "memory_type": {"type": "string", "enum": ["file_corpus", "transcript"]},
+            "content_ref": {"type": "string", "minLength": 1},
+            "pointer_id": {"type": "string", "minLength": 1},
+            "summary_id": {"type": "string", "minLength": 1},
+            "verification": {
+                "type": "string",
+                "enum": ["verified", "stale", "missing", "unsupported", "unknown"],
+                "default": "unknown",
+            },
+            "client": {"type": "string", "enum": ["mcp", "openclaw"], "default": "mcp"},
+        },
+    },
+    "memorycore_recall": {
+        "required": [],
+        "properties": {
+            "record_id": {"type": "string", "minLength": 1},
+            "pointer_id": {"type": "string", "minLength": 1},
+            "client": {"type": "string", "enum": ["mcp", "openclaw"], "default": "mcp"},
+        },
+    },
+    "memorycore_cache_search": {
+        "required": ["query"],
+        "properties": {
+            "query": {"type": "string", "minLength": 1},
+            "memory_type": {"type": "string", "enum": ["file_corpus", "transcript"]},
+            "limit": {"type": "integer", "minimum": 1, "maximum": 50, "default": 5},
+            "client": {"type": "string", "enum": ["mcp", "openclaw"], "default": "mcp"},
+        },
+    },
+    "memorycore_flush": {
+        "required": [],
+        "properties": {
+            "client": {"type": "string", "enum": ["mcp", "openclaw"], "default": "mcp"},
+        },
+    },
 }
 
 CLI_ARGS: dict[str, tuple[str, ...]] = {
