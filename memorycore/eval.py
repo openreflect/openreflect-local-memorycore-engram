@@ -36,6 +36,7 @@ PUBLIC_SAFE_EVALS = (
     EvalSpec("MEMORYCORE_CLI", ("scripts/validate_mvp_cli.py",)),
     EvalSpec("MEMORYCORE_MCP_SURFACE", ("scripts/validate_mvp_mcp_surface.py",)),
     EvalSpec("MEMORYCORE_CONTRACT_SECURITY", ("scripts/validate_mvp_contract_security.py",)),
+    EvalSpec("MEMORYCORE_CACHE_ROUTER", ("scripts/validate_mvp_cache_router.py",)),
     EvalSpec("MEMORYCORE_E2E_GOLDEN_PATH", ("scripts/validate_e2e_golden_path.py",)),
 )
 
