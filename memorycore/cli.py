@@ -1,13 +1,19 @@
-"""Static CLI developer surface for the MemoryCore MVP.
+"""CLI developer surface for the MemoryCore MVP.
 
-The CLI currently operates on public-safe fixture data only. It does not call
-QMD, Lossless-Claw, Burrow, OpenClaw, or any live runtime.
+The CLI operates on public-safe fixture data by default. Setting
+``MEMORYCORE_BACKEND_MODE=live-local`` routes QMD reads through the explicit
+live-local subprocess adapter (``MEMORYCORE_QMD_BIN`` and
+``MEMORYCORE_QMD_COLLECTION`` configure it) and reports Lossless-Claw as
+unavailable until a host bridge path exists for this surface. It never calls
+Burrow or OpenClaw.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
+import shutil
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -16,7 +22,13 @@ from typing import Any
 from memorycore.audit_log import append_record, build_audit_record, read_recent
 from memorycore.eval import run_public_safe_eval
 from memorycore.lcm_adapter import normalize_lcm_get, normalize_lcm_search
-from memorycore.qmd_adapter import normalize_qmd_get, normalize_qmd_search
+from memorycore.qmd_adapter import (
+    DEFAULT_QMD_BIN,
+    live_local_qmd_get,
+    live_local_qmd_search,
+    normalize_qmd_get,
+    normalize_qmd_search,
+)
 from memorycore.registry_router import BackendRegistry, route_request
 from memorycore.verification_state import normalize_verify_result
 
@@ -24,6 +36,8 @@ from memorycore.verification_state import normalize_verify_result
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / "fixtures"
 DEFAULT_AUDIT_LOG = ROOT / ".memorycore" / "audit.jsonl"
+
+BACKEND_MODES = ("fixture", "live-local")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -136,14 +150,70 @@ def _operation(command: str) -> str:
     return command
 
 
+def resolve_backend_mode() -> str:
+    mode = os.environ.get("MEMORYCORE_BACKEND_MODE", "fixture")
+    if mode not in BACKEND_MODES:
+        raise ValueError(f"unsupported MEMORYCORE_BACKEND_MODE: {mode}")
+    return mode
+
+
+def _qmd_live_config() -> dict[str, Any]:
+    return {
+        "qmd_bin": os.environ.get("MEMORYCORE_QMD_BIN", DEFAULT_QMD_BIN),
+        "collection": os.environ.get("MEMORYCORE_QMD_COLLECTION"),
+    }
+
+
+def _registry_for_mode(mode: str) -> BackendRegistry:
+    data = _load_json(FIXTURES / "backend-registry" / "basic.json")
+    if mode == "fixture":
+        return BackendRegistry.from_dict(data)
+
+    for backend in data["backends"]:
+        if backend["backend_id"] == "qmd":
+            config = _qmd_live_config()
+            if shutil.which(config["qmd_bin"]) is None:
+                backend["health"] = "unavailable"
+                backend["error"] = {
+                    "code": "BACKEND_UNAVAILABLE",
+                    "category": "backend_unavailable",
+                    "message": "QMD CLI is not available in live-local mode.",
+                }
+            elif not config["collection"]:
+                backend["health"] = "unavailable"
+                backend["error"] = {
+                    "code": "BACKEND_UNAVAILABLE",
+                    "category": "backend_unavailable",
+                    "message": "MEMORYCORE_QMD_COLLECTION is not set for live-local mode.",
+                }
+            else:
+                backend["health"] = "healthy"
+        elif backend["backend_id"] == "lossless_claw":
+            backend["health"] = "unavailable"
+            backend["error"] = {
+                "code": "BACKEND_UNAVAILABLE",
+                "category": "backend_unavailable",
+                "message": "LCM host bridge is not configured for this surface in live-local mode.",
+            }
+    return BackendRegistry.from_dict(data)
+
+
 def _execute_request(request: dict[str, Any]) -> dict[str, Any]:
-    registry = BackendRegistry.from_dict(_load_json(FIXTURES / "backend-registry" / "basic.json"))
+    mode = resolve_backend_mode()
+    registry = _registry_for_mode(mode)
     routed = route_request(request, registry)
     if routed["status"] == "error" or request["operation"] == "health":
         return routed
 
     backend_id = routed["selected_backend"]
     operation = request["operation"]
+
+    if mode == "live-local" and backend_id == "qmd":
+        config = _qmd_live_config()
+        if operation == "search":
+            return live_local_qmd_search(request, collection=config["collection"], qmd_bin=config["qmd_bin"])
+        if operation == "get":
+            return live_local_qmd_get(request, qmd_bin=config["qmd_bin"])
 
     if backend_id == "qmd" and operation == "search":
         return normalize_qmd_search(request, _load_json(FIXTURES / "qmd" / "search-results.json"))

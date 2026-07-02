@@ -78,9 +78,14 @@ Ordered critical path to a functional caching memory layer between
 OpenClaw, QMD, and LCM. Fixture-first versions of all items are buildable
 now; only live OpenClaw invocation waits on the EVAL-012 hard stop.
 
-1. Live read wiring: `_execute_request` still routes search/get to static
-   fixtures. Wire the existing live-local QMD mode and LCM host bridge in
-   behind an explicit mode flag (fixture stays the default).
+1. Live read wiring: SCAFFOLDED for QMD. `MEMORYCORE_BACKEND_MODE=live-local`
+   routes QMD search/get through the live-local subprocess adapter
+   (`MEMORYCORE_QMD_BIN`, `MEMORYCORE_QMD_COLLECTION`); fixture stays the
+   default; LCM reports unavailable in live-local mode because no host
+   bridge exists on the CLI/MCP surface (open design question: bridge over
+   MCP). Validated by `scripts/validate_mvp_live_mode.py` with a stub qmd
+   binary. Remaining: run against real QMD locally, decide the LCM bridge
+   transport.
 2. Real verification: `memorycore_verify` currently echoes the caller's
    asserted state. Implement backend-proof verify (QMD `get` resolves ->
    `verified`; LCM `describe` confirms -> `verified`) per
