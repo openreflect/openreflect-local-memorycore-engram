@@ -26,6 +26,7 @@ from memorycore.qmd_adapter import (
     DEFAULT_QMD_BIN,
     live_local_qmd_get,
     live_local_qmd_search,
+    live_local_qmd_verify,
     normalize_qmd_get,
     normalize_qmd_search,
 )
@@ -188,6 +189,10 @@ def _registry_for_mode(mode: str) -> BackendRegistry:
                 }
             else:
                 backend["health"] = "healthy"
+                if "verify" not in backend["capabilities"]:
+                    backend["capabilities"] = [*backend["capabilities"], "verify"]
+                if "source_verify" not in backend.get("default_intents", []):
+                    backend["default_intents"] = [*backend.get("default_intents", []), "source_verify"]
         elif backend["backend_id"] == "lossless_claw":
             backend["health"] = "unavailable"
             backend["error"] = {
@@ -210,10 +215,13 @@ def _execute_request(request: dict[str, Any]) -> dict[str, Any]:
 
     if mode == "live-local" and backend_id == "qmd":
         config = _qmd_live_config()
+        timeout = float(os.environ.get("MEMORYCORE_QMD_TIMEOUT_SECONDS", "10"))
         if operation == "search":
-            return live_local_qmd_search(request, collection=config["collection"], qmd_bin=config["qmd_bin"])
+            return live_local_qmd_search(request, collection=config["collection"], qmd_bin=config["qmd_bin"], timeout_seconds=timeout)
         if operation == "get":
-            return live_local_qmd_get(request, qmd_bin=config["qmd_bin"])
+            return live_local_qmd_get(request, qmd_bin=config["qmd_bin"], timeout_seconds=timeout)
+        if operation == "verify":
+            return live_local_qmd_verify(request, qmd_bin=config["qmd_bin"], timeout_seconds=timeout)
 
     if backend_id == "qmd" and operation == "search":
         return normalize_qmd_search(request, _load_json(FIXTURES / "qmd" / "search-results.json"))

@@ -24,11 +24,11 @@ Stable = UCXM has no − and no ?. Scores are lazy and must carry reasons.
 | EN-015 | Live-local backend mode switch | EN-008 | built | | scripts/validate_mvp_live_mode.py | MEMORYCORE_BACKEND_MODE; fixture default |
 | EN-016 | Transient content write-through | EN-013 | built | | docs/adr/0005-transient-content-write-through.md | proven against real QMD 2026-07-04 |
 | EN-017 | Public repo with CI | EN-001 | built | | .github/workflows/ci.yml | github.com/openreflect org, leak check run |
-| EN-018 | Real backend-proof verification | GAP-001 | concept | +00+ | docs/AGENT_CONTEXT.md | U: core freshness promise; M: deterministic CLI read-back; frontier next |
+| EN-018 | Real backend-proof verification | GAP-001 | built | +00+ | scripts/validate_mvp_real_verify.py | U: core freshness promise; M: deterministic CLI read-back; proven on real index 2026-07-05 |
 | RISK-001 | LCM bridge cannot cross MCP | EN-009 | concept | | docs/AGENT_CONTEXT.md | host callables vs stdio transport; Physics breaks: no callback channel |
 | RISK-002 | Failed write-through drops content | EN-016 | concept | | docs/adr/0005-transient-content-write-through.md | by design; spool fallback if painful |
 | RISK-003 | OpenClaw smoke awaits approval | EN-011 | deferred | | docs/OPENCLAW_INTEGRATION_SMOKE_PLAN.md | EVAL-012 hard stop; operator lifts |
-| GAP-001 | Verify echoes caller assertion | EN-005 | concept | | memorycore/cli.py | core promise unimplemented; EN-018 answers |
+| GAP-001 | Verify echoes caller assertion | EN-005 | superseded | | memorycore/cli.py | closed by EN-018; fixture echo remains contract-only |
 | GAP-002 | No flush retry deadletter | EN-013 | concept | | docs/AGENT_CONTEXT.md | failed records dead-end forever |
 | GAP-003 | Request ids collide | EN-011 | concept | | docs/MCP_HANDOFF.md | req_mcp_search every call |
 | GAP-004 | No remember idempotency policy | EN-013 | concept | | docs/AGENT_CONTEXT.md | timestamp in id duplicates repeats |

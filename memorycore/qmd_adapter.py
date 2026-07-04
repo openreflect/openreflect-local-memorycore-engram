@@ -253,11 +253,14 @@ def live_local_qmd_write(
         if isinstance(rows, list) and rows:
             verification = "verified"
 
+    import hashlib
+
     return {
         "request_id": request["request_id"],
         "operation": "cache_write",
         "status": "ok",
         "selected_backend": BACKEND_ID,
+        "content_hash": hashlib.sha256(body.encode("utf-8")).hexdigest(),
         "results": [
             {
                 "backend_id": BACKEND_ID,
@@ -271,6 +274,93 @@ def live_local_qmd_write(
             }
         ],
         "verification_state": verification,
+    }
+
+
+def live_local_qmd_verify(
+    request: dict[str, Any],
+    *,
+    qmd_bin: str = DEFAULT_QMD_BIN,
+    timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
+) -> dict[str, Any]:
+    """Backend-proof verification against current source state (EN-018).
+
+    Disk is authoritative for existence; the index must agree with disk for
+    a verified stamp. Semantics established empirically 2026-07-04:
+    - source file gone -> missing (even while the index still serves it)
+    - disk differs from stored hash or indexed body -> stale
+    - disk and index agree -> verified
+    - backend unavailable or unreadable -> unknown
+    """
+
+    import hashlib
+    from pathlib import Path
+
+    pointer = request.get("pointer", {})
+    pointer_id = pointer.get("pointer_id")
+    if not pointer_id:
+        return _error_result(
+            request,
+            "verify",
+            {
+                "code": "POINTER_MISSING",
+                "category": "pointer_missing",
+                "message": "QMD pointer_id is required.",
+                "verification_state": "missing",
+                "details": {"backend_id": BACKEND_ID},
+            },
+        )
+
+    source_uri = pointer.get("source_uri")
+    expected_hash = request.get("content_hash") or pointer.get("content_hash")
+
+    disk_text: str | None = None
+    if source_uri and not source_uri.startswith("qmd://"):
+        path = Path(source_uri).expanduser()
+        if not path.exists():
+            return _verify_result(request, "missing")
+        try:
+            disk_text = path.read_text(encoding="utf-8")
+        except OSError:
+            return _verify_result(request, "unknown")
+
+    completed = _run_qmd([qmd_bin, "multi-get", pointer_id, "--json"], timeout_seconds=timeout_seconds)
+    if completed["status"] == "error":
+        return _verify_result(request, "unknown")
+    try:
+        rows = json.loads(completed.get("stdout", ""))
+    except json.JSONDecodeError:
+        rows = []
+    if not isinstance(rows, list):
+        rows = []
+    index_body = _item_text(rows[0], ("body", "content", "text")) if rows and isinstance(rows[0], dict) else None
+
+    if disk_text is not None:
+        if expected_hash:
+            actual = hashlib.sha256(disk_text.encode("utf-8")).hexdigest()
+            return _verify_result(request, "verified" if actual == expected_hash else "stale")
+        if index_body:
+            return _verify_result(request, "verified" if disk_text.strip() == index_body.strip() else "stale")
+        return _verify_result(request, "stale")
+
+    return _verify_result(request, "verified" if rows else "missing")
+
+
+def _verify_result(request: dict[str, Any], state: str) -> dict[str, Any]:
+    return {
+        "request_id": request["request_id"],
+        "operation": "verify",
+        "status": "ok",
+        "selected_backend": BACKEND_ID,
+        "results": [
+            {
+                "backend_id": BACKEND_ID,
+                "pointer": request.get("pointer", {}),
+                "recall_mode": "qmd_live_local",
+                "verification_state": state,
+            }
+        ],
+        "verification_state": state,
     }
 
 

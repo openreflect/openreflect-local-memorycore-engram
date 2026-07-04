@@ -43,15 +43,17 @@ EXPECTED_TOOLS: dict[str, dict[str, Any]] = {
         },
     },
     "memorycore_verify": {
-        "required": ["pointer_id"],
+        "required": [],
         "properties": {
             "pointer_id": {"type": "string", "minLength": 1},
+            "record_id": {"type": "string", "minLength": 1},
             "backend": {"type": "string", "enum": ["qmd", "lossless_claw", "mock_healthy"], "default": "mock_healthy"},
             "state": {
                 "type": "string",
                 "enum": ["verified", "stale", "missing", "unsupported", "unknown"],
                 "default": "verified",
             },
+            "client": {"type": "string", "enum": ["mcp", "openclaw"], "default": "mcp"},
         },
     },
     "memorycore_health": {

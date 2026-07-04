@@ -80,14 +80,18 @@ def _register_tools(server: Any) -> None:
         structured_output=False,
     )
     def memorycore_verify(
-        pointer_id: str,
+        pointer_id: str | None = None,
+        record_id: str | None = None,
         backend: str = "mock_healthy",
         state: str = "verified",
+        client: str = "mcp",
     ) -> dict[str, Any]:
-        return _call_surface(
-            "memorycore_verify",
-            {"pointer_id": pointer_id, "backend": backend, "state": state},
-        )
+        arguments: dict[str, Any] = {"backend": backend, "state": state, "client": client}
+        if pointer_id is not None:
+            arguments["pointer_id"] = pointer_id
+        if record_id is not None:
+            arguments["record_id"] = record_id
+        return _call_surface("memorycore_verify", arguments)
 
     @server.tool(
         name="memorycore_health",

@@ -88,11 +88,15 @@ now; only live OpenClaw invocation waits on the EVAL-012 hard stop.
    MCP). Validated by `scripts/validate_mvp_live_mode.py` with a stub qmd
    binary. Remaining: run against real QMD locally, decide the LCM bridge
    transport.
-2. Real verification: `memorycore_verify` currently echoes the caller's
-   asserted state. Implement backend-proof verify (QMD `get` resolves ->
-   `verified`; LCM `describe` confirms -> `verified`) per
-   `docs/LIVE_BACKEND_BOUNDARIES.md`, plus a re-verification policy so
-   cached `verified` stamps can degrade (verify-on-read or TTL).
+2. Real verification: DONE for QMD (EN-018). `memorycore_verify` with
+   `record_id` in live-local mode proves against source state: disk gone ->
+   `missing` (even while the index lags), disk differs from stored content
+   hash or indexed body -> `stale`, agreement -> `verified`, backend down ->
+   `unknown`. Verdicts update the cached stamp. Cache gained a
+   `content_hash` column (auto-migrated). Fixture-mode record verification
+   honestly returns `unsupported`. Proven on the real index 2026-07-05.
+   Remaining: LCM `describe`-based verify (needs RISK-001 transport),
+   automatic re-verification policy (verify-on-read / TTL, IDEA-002).
 3. Content-in-transit: DONE for QMD (ADR-0005 transient write-through).
    `memorycore_remember` accepts `content`; live-local mode materializes
    it into the dedicated `memorycore-writes` collection

@@ -23,7 +23,7 @@ from memorycore.cache_router import (
     flush_pending,
 )
 from memorycore.cli import DEFAULT_AUDIT_LOG, ROOT, _execute_request, resolve_backend_mode
-from memorycore.qmd_adapter import DEFAULT_QMD_BIN, live_local_qmd_write
+from memorycore.qmd_adapter import DEFAULT_QMD_BIN, live_local_qmd_verify, live_local_qmd_write
 
 DEFAULT_WRITE_COLLECTION = "memorycore-writes"
 DEFAULT_CORPUS_DIR = "~/.memorycore/corpus"
@@ -84,19 +84,20 @@ TOOL_DEFINITIONS: tuple[dict[str, Any], ...] = (
     },
     {
         "name": "memorycore_verify",
-        "description": "Verify a MemoryCore pointer using public-safe fixture data.",
+        "description": "Verify a pointer (fixture contract) or a cached record against real source state (record_id, live-local mode). Real verdicts update the cached stamp.",
         "input_schema": {
             "type": "object",
-            "required": ["pointer_id"],
             "additionalProperties": False,
             "properties": {
                 "pointer_id": {"type": "string", "minLength": 1},
+                "record_id": {"type": "string", "minLength": 1},
                 "backend": {"type": "string", "enum": ["qmd", "lossless_claw", "mock_healthy"], "default": "mock_healthy"},
                 "state": {
                     "type": "string",
                     "enum": ["verified", "stale", "missing", "unsupported", "unknown"],
                     "default": "verified",
                 },
+                "client": {"type": "string", "enum": ["mcp", "openclaw"], "default": "mcp"},
             },
         },
     },
@@ -182,6 +183,20 @@ def call_tool(
 ) -> dict[str, Any]:
     arguments = arguments or {}
     _validate_tool_arguments(tool_name, arguments)
+
+    if tool_name == "memorycore_verify":
+        if not (arguments.get("pointer_id") or arguments.get("record_id")):
+            raise ValueError("memorycore_verify requires pointer_id or record_id")
+        if arguments.get("record_id"):
+            result = _verify_cached_record(arguments, cache_db or DEFAULT_CACHE_DB)
+            request = {
+                "request_id": f"req_{arguments.get('client', 'mcp')}_verify",
+                "client_surface": arguments.get("client", "mcp"),
+                "operation": "verify",
+            }
+            record = build_audit_record(request, result, timestamp=_timestamp())
+            append_record(audit_log or DEFAULT_AUDIT_LOG, record)
+            return {**result, "audit_id": record["audit_id"]}
 
     if tool_name in CACHE_TOOL_NAMES:
         request = _cache_request_from_tool(tool_name, arguments)
@@ -273,6 +288,70 @@ def _cache_write_result(request: dict[str, Any], arguments: dict[str, Any], stor
     return {**result, "selected_backend": backend_id}
 
 
+def _verify_cached_record(arguments: dict[str, Any], cache_db: Path) -> dict[str, Any]:
+    """EN-018: prove a cached record against real source state, update its stamp."""
+    client = arguments.get("client", "mcp")
+    request = {
+        "request_id": f"req_{client}_verify",
+        "client_surface": client,
+        "operation": "verify",
+    }
+    cache_db.parent.mkdir(parents=True, exist_ok=True)
+    store = CacheStore(cache_db)
+    try:
+        record = store.get(arguments["record_id"])
+        if record is None:
+            return {
+                **request,
+                "status": "error",
+                "results": [],
+                "verification_state": "missing",
+                "error": {
+                    "code": "CACHE_MISS",
+                    "category": "pointer_missing",
+                    "message": "No cached record matches the requested id.",
+                    "verification_state": "missing",
+                },
+            }
+
+        backend_id = record["source_pointer"].get("backend_id")
+        if resolve_backend_mode() != "live-local" or backend_id != "qmd":
+            return {
+                **request,
+                "status": "error",
+                "results": [],
+                "verification_state": "unsupported",
+                "error": {
+                    "code": "VERIFICATION_UNSUPPORTED",
+                    "category": "verification_unsupported",
+                    "message": "Real verification requires live-local mode and a qmd-backed record.",
+                    "verification_state": "unsupported",
+                },
+            }
+
+        verify_request = {
+            **request,
+            "pointer": record["source_pointer"],
+            "content_hash": record.get("content_hash") or None,
+        }
+        result = live_local_qmd_verify(
+            verify_request,
+            qmd_bin=os.environ.get("MEMORYCORE_QMD_BIN", DEFAULT_QMD_BIN),
+            timeout_seconds=float(os.environ.get("MEMORYCORE_QMD_TIMEOUT_SECONDS", "10")),
+        )
+
+        state = result.get("verification_state", "unknown")
+        record["verification"] = state
+        record["updated_at"] = _timestamp()
+        store.upsert(record)
+
+        if result.get("results"):
+            result["results"][0]["record_id"] = record["record_id"]
+        return {**result, "request_id": request["request_id"]}
+    finally:
+        store.close()
+
+
 def _content_write_through(request: dict[str, Any], arguments: dict[str, Any], store: CacheStore) -> dict[str, Any]:
     """ADR-0005: content rides the call, lands in the backend, cache keeps the pointer."""
     memory_type = arguments["memory_type"]
@@ -316,10 +395,12 @@ def _content_write_through(request: dict[str, Any], arguments: dict[str, Any], s
             return write_result
         pointer = write_result["results"][0]["pointer"]
         verification = write_result["verification_state"]
+        content_hash = write_result.get("content_hash", "")
         write_mode = "live-local"
     else:
         pointer = {"backend_id": "qmd", "pointer_id": f"qmd://{collection}/{memory_id}.md"}
         verification = "unknown"
+        content_hash = ""
         write_mode = "fixture-only"
 
     record = cache_write(
@@ -329,6 +410,7 @@ def _content_write_through(request: dict[str, Any], arguments: dict[str, Any], s
             "content_ref": pointer["pointer_id"],
             "source_pointer": pointer,
             "verification": verification,
+            "content_hash": content_hash,
         },
         timestamp=timestamp,
     )

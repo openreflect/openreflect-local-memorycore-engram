@@ -40,7 +40,8 @@ CREATE TABLE IF NOT EXISTS cache_records (
     verification TEXT NOT NULL,
     flush_state TEXT NOT NULL,
     created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
+    updated_at TEXT NOT NULL,
+    content_hash TEXT NOT NULL DEFAULT ''
 )
 """
 
@@ -53,6 +54,7 @@ _COLUMNS = (
     "flush_state",
     "created_at",
     "updated_at",
+    "content_hash",
 )
 
 
@@ -62,6 +64,9 @@ class CacheStore:
     def __init__(self, path: Path | str) -> None:
         self._conn = sqlite3.connect(str(path))
         self._conn.execute(_SCHEMA)
+        existing = {row[1] for row in self._conn.execute("PRAGMA table_info(cache_records)")}
+        if "content_hash" not in existing:
+            self._conn.execute("ALTER TABLE cache_records ADD COLUMN content_hash TEXT NOT NULL DEFAULT ''")
         self._conn.commit()
 
     def close(self) -> None:
@@ -116,6 +121,7 @@ class CacheStore:
                 record["flush_state"],
                 record["created_at"],
                 record["updated_at"],
+                record.get("content_hash", ""),
             ),
         )
         self._conn.commit()
@@ -153,6 +159,7 @@ def cache_write(
         "flush_state": "pending",
         "created_at": timestamp,
         "updated_at": timestamp,
+        "content_hash": entry.get("content_hash", ""),
     }
     record["record_id"] = _record_id(record)
     store.upsert(record)
