@@ -6,6 +6,8 @@ This file is the first-load map for agents working on MemoryCore.
 
 ## Load Order
 
+0. `docs/REGISTER.md` — QTrellis product register; open before discussing
+   any item, name an ID in every product-code commit
 1. `SPEC.md`
 2. `tasks/plan.md`
 3. `tasks/todo.md`
