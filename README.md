@@ -30,6 +30,72 @@ semantic recall systems + insight agents
 
 Engram does not replace semantic search or summarization. It gives those systems a local provenance layer they can cite, verify, branch, and repair.
 
+## Architecture status map
+
+```text
+ Legend: [LIVE] operational, proven   [WIP] being worked on   [PLAN] designed only
+         [GATE] awaiting operator approval (EVAL-012 hard stop)
+
+┌─────────────────────────────────── CALLERS ───────────────────────────────────┐
+│                                                                               │
+│   OpenClaw sessions            Operator CLI             Any MCP client        │
+│   [GATE] live connect          [LIVE] search, get,      [LIVE] FastMCP        │
+│   surface ready; smoke         verify, health, audit,   stdio / sse /         │
+│   blocked by EVAL-012          eval --public-safe       streamable-http       │
+└──────────────────────────────────────┬────────────────────────────────────────┘
+                                       │
+                8 MCP tools / CLI verbs [LIVE]:  search · get · verify ·
+                health · remember · recall · cache_search · flush
+                                       │
+┌──────────────────────────────────────▼────────────────────────────────────────┐
+│                         MEMORYCORE CONTROL PLANE                              │
+│                                                                               │
+│   ┌──────────────────────────┐      ┌───────────────────────────────────┐     │
+│   │ BACKEND ROUTER  [LIVE]   │      │ CACHING MEMORY ROUTER  [LIVE]     │     │
+│   │ intent -> backend,       │      │ SQLite cache as provenance        │     │
+│   │ health-aware routing,    │      │ anchor; write / read / search;    │     │
+│   │ fixture | live-local     │      │ flush by memory type; transient   │     │
+│   │ mode switch              │      │ content write-through (ADR-0005)  │     │
+│   └──────────────────────────┘      └───────────────────────────────────┘     │
+│                                                                               │
+│   ┌───────────────────────────────────────────────────────────────────────┐   │
+│   │ AUDIT LOG [LIVE] content-sparse, client-attributed                    │   │
+│   │ PROVENANCE LEDGER [LIVE] pointer-first records                        │   │
+│   │ VERIFICATION [WIP] vocabulary live; real backend-proof checks and     │   │
+│   │   re-verification policy are the current build frontier              │   │
+│   └───────────────────────────────────────────────────────────────────────┘   │
+└─────────────┬──────────────────────────┬───────────────────────┬──────────────┘
+              │ reads [LIVE]             │ writes [LIVE]         │ [PLAN]
+              │ live-local CLI           │ transient content     │
+              │ shell-out                │ write-through         │
+┌─────────────▼───────────┐ ┌────────────▼───────────┐ ┌─────────▼──────────────┐
+│ QMD  [LIVE]             │ │ LCM (Lossless-Claw)    │ │ FUTURE BACKENDS [PLAN] │
+│ local corpus index      │ │ [WIP]                  │ │ Honcho (peer memory)   │
+│ reads: live-local       │ │ transcript memory      │ │ gbrain (knowledge)     │
+│ writes: dedicated       │ │ fixture reads work;    │ │ Notion / Drive / S3    │
+│ memorycore-writes       │ │ live path blocked on   │ │ memory fabric          │
+│ collection              │ │ bridge-over-MCP        │ └────────────────────────┘
+│ proven end-to-end       │ │ transport decision     │
+│ 2026-07-04              │ └────────────────────────┘
+└─────────────────────────┘
+
+┌───────────────────────────── EVALUATION HARNESS ──────────────────────────────┐
+│ [LIVE] 18 deterministic public-safe validators, CI green on every push        │
+│ [LIVE] local-only live evals (QMD real index, LCM synthetic store)            │
+│ [GATE] EVAL-012 OpenClaw integration smoke -> unlocks the final MVP verdict   │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+The proven loop (2026-07-04): an OpenClaw-shaped caller sent remember(content)
+-> the cache stamped a provenance pointer -> the content was materialized as a
+markdown file with provenance frontmatter -> QMD indexed it -> read-back earned
+a "verified" stamp -> recall served the pointer from cache -> QMD's own search
+finds the memory.
+
+Currently being worked on: real backend-proof verification (replacing the
+caller-asserted stub) and the LCM bridge-over-MCP transport decision that
+unblocks live transcript memory.
+```
+
 ## What OpenReflect-Local-MemoryCore-Engram manages
 
 - Git-native memory records and provenance pointers.
