@@ -59,10 +59,11 @@ EXPECTED_TOOLS: dict[str, dict[str, Any]] = {
         "properties": {},
     },
     "memorycore_remember": {
-        "required": ["memory_type", "content_ref"],
+        "required": ["memory_type"],
         "properties": {
             "memory_type": {"type": "string", "enum": ["file_corpus", "transcript"]},
             "content_ref": {"type": "string", "minLength": 1},
+            "content": {"type": "string", "minLength": 1},
             "pointer_id": {"type": "string", "minLength": 1},
             "summary_id": {"type": "string", "minLength": 1},
             "verification": {

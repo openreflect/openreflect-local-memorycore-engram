@@ -7,6 +7,8 @@ Lossless-Claw. It is a static contract layer for EVAL-011.
 
 from __future__ import annotations
 
+import hashlib
+import os
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -20,7 +22,11 @@ from memorycore.cache_router import (
     cache_write,
     flush_pending,
 )
-from memorycore.cli import DEFAULT_AUDIT_LOG, ROOT, _execute_request
+from memorycore.cli import DEFAULT_AUDIT_LOG, ROOT, _execute_request, resolve_backend_mode
+from memorycore.qmd_adapter import DEFAULT_QMD_BIN, live_local_qmd_write
+
+DEFAULT_WRITE_COLLECTION = "memorycore-writes"
+DEFAULT_CORPUS_DIR = "~/.memorycore/corpus"
 
 
 DEFAULT_CACHE_DB = ROOT / ".memorycore" / "cache.sqlite3"
@@ -101,14 +107,15 @@ TOOL_DEFINITIONS: tuple[dict[str, Any], ...] = (
     },
     {
         "name": "memorycore_remember",
-        "description": "Write a content-sparse memory record into the local cache, routed by memory type.",
+        "description": "Write a memory record into the local cache, routed by memory type. Provide content_ref to remember a pointer, or content for a transient write-through into the backend (ADR-0005).",
         "input_schema": {
             "type": "object",
-            "required": ["memory_type", "content_ref"],
+            "required": ["memory_type"],
             "additionalProperties": False,
             "properties": {
                 "memory_type": {"type": "string", "enum": ["file_corpus", "transcript"]},
                 "content_ref": {"type": "string", "minLength": 1},
+                "content": {"type": "string", "minLength": 1},
                 "pointer_id": {"type": "string", "minLength": 1},
                 "summary_id": {"type": "string", "minLength": 1},
                 "verification": {
@@ -205,6 +212,8 @@ def _cache_request_from_tool(tool_name: str, arguments: dict[str, Any]) -> dict[
     }
     if tool_name == "memorycore_recall" and not (arguments.get("record_id") or arguments.get("pointer_id")):
         raise ValueError("memorycore_recall requires record_id or pointer_id")
+    if tool_name == "memorycore_remember" and not (arguments.get("content_ref") or arguments.get("content")):
+        raise ValueError("memorycore_remember requires content_ref or content")
     return {
         "request_id": f"req_{client}_{suffix}",
         "client_surface": client,
@@ -239,6 +248,9 @@ def _execute_cache_request(
 
 
 def _cache_write_result(request: dict[str, Any], arguments: dict[str, Any], store: CacheStore) -> dict[str, Any]:
+    if arguments.get("content") is not None:
+        return _content_write_through(request, arguments, store)
+
     memory_type = arguments["memory_type"]
     content_ref = arguments["content_ref"]
     backend_id = DEFAULT_ROUTING[memory_type][0]
@@ -259,6 +271,73 @@ def _cache_write_result(request: dict[str, Any], arguments: dict[str, Any], stor
     )
     result = _ok_cache_result(request, [_cache_item(record)])
     return {**result, "selected_backend": backend_id}
+
+
+def _content_write_through(request: dict[str, Any], arguments: dict[str, Any], store: CacheStore) -> dict[str, Any]:
+    """ADR-0005: content rides the call, lands in the backend, cache keeps the pointer."""
+    memory_type = arguments["memory_type"]
+    if memory_type != "file_corpus":
+        return {
+            "request_id": request["request_id"],
+            "operation": request["operation"],
+            "status": "error",
+            "results": [],
+            "verification_state": "unknown",
+            "error": {
+                "code": "BACKEND_UNAVAILABLE",
+                "category": "backend_unavailable",
+                "message": "Content write-through supports file_corpus only until the LCM bridge transport exists.",
+            },
+        }
+
+    content = arguments["content"]
+    timestamp = _timestamp()
+    memory_id = "memory-" + hashlib.sha256(f"{content}{timestamp}".encode()).hexdigest()[:16]
+    collection = os.environ.get("MEMORYCORE_QMD_WRITE_COLLECTION", DEFAULT_WRITE_COLLECTION)
+
+    if resolve_backend_mode() == "live-local":
+        write_result = live_local_qmd_write(
+            request,
+            content=content,
+            corpus_dir=os.environ.get("MEMORYCORE_CORPUS_DIR", DEFAULT_CORPUS_DIR),
+            collection=collection,
+            memory_id=memory_id,
+            frontmatter={
+                "memorycore": "true",
+                "memory_id": memory_id,
+                "memory_type": memory_type,
+                "client_surface": arguments.get("client", "mcp"),
+                "created_at": timestamp,
+            },
+            qmd_bin=os.environ.get("MEMORYCORE_QMD_BIN", DEFAULT_QMD_BIN),
+            timeout_seconds=float(os.environ.get("MEMORYCORE_QMD_TIMEOUT_SECONDS", "10")),
+        )
+        if write_result["status"] == "error":
+            return write_result
+        pointer = write_result["results"][0]["pointer"]
+        verification = write_result["verification_state"]
+        write_mode = "live-local"
+    else:
+        pointer = {"backend_id": "qmd", "pointer_id": f"qmd://{collection}/{memory_id}.md"}
+        verification = "unknown"
+        write_mode = "fixture-only"
+
+    record = cache_write(
+        store,
+        {
+            "memory_type": memory_type,
+            "content_ref": pointer["pointer_id"],
+            "source_pointer": pointer,
+            "verification": verification,
+        },
+        timestamp=timestamp,
+    )
+    record["flush_state"] = "flushed"
+    record["updated_at"] = timestamp
+    store.upsert(record)
+
+    result = _ok_cache_result(request, [_cache_item(record)])
+    return {**result, "selected_backend": "qmd", "write_mode": write_mode}
 
 
 def _cache_read_result(request: dict[str, Any], arguments: dict[str, Any], store: CacheStore) -> dict[str, Any]:

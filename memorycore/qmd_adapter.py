@@ -192,6 +192,88 @@ def live_local_qmd_get(
     return _normalize_live_get(request, parsed["value"], pointer_id)
 
 
+def live_local_qmd_write(
+    request: dict[str, Any],
+    *,
+    content: str,
+    corpus_dir: str,
+    collection: str,
+    memory_id: str,
+    frontmatter: dict[str, Any],
+    qmd_bin: str = DEFAULT_QMD_BIN,
+    timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
+) -> dict[str, Any]:
+    """Materialize content into the dedicated write collection (ADR-0005).
+
+    Writes a markdown file with provenance frontmatter, reindexes through the
+    allowlisted CLI, and reads the file back to earn the verified stamp.
+    Content is never persisted anywhere except the backend-owned corpus file.
+    """
+
+    from pathlib import Path
+
+    directory = Path(corpus_dir).expanduser()
+    filename = f"{memory_id}.md"
+    file_path = directory / filename
+    pointer_id = f"qmd://{collection}/{filename}"
+
+    lines = ["---"]
+    for key, value in frontmatter.items():
+        lines.append(f"{key}: {value}")
+    lines.append("---")
+    body = "\n".join(lines) + "\n\n" + content.rstrip() + "\n"
+
+    try:
+        directory.mkdir(parents=True, exist_ok=True)
+        file_path.write_text(body, encoding="utf-8")
+    except OSError as exc:
+        return _error_result(
+            request,
+            "cache_write",
+            {
+                "code": "QMD_WRITE_FAILED",
+                "category": "backend_error",
+                "message": "Could not materialize memory file in the write collection.",
+                "verification_state": "unknown",
+                "details": {"backend_id": BACKEND_ID, "exception_type": exc.__class__.__name__},
+            },
+        )
+
+    updated = _run_qmd([qmd_bin, "update"], timeout_seconds=timeout_seconds)
+    if updated["status"] == "error":
+        return _error_result(request, "cache_write", updated["error"])
+
+    read_back = _run_qmd([qmd_bin, "multi-get", pointer_id, "--json"], timeout_seconds=timeout_seconds)
+    verification = "unknown"
+    if read_back["status"] == "ok":
+        try:
+            rows = json.loads(read_back.get("stdout", ""))
+        except json.JSONDecodeError:
+            rows = None
+        if isinstance(rows, list) and rows:
+            verification = "verified"
+
+    return {
+        "request_id": request["request_id"],
+        "operation": "cache_write",
+        "status": "ok",
+        "selected_backend": BACKEND_ID,
+        "results": [
+            {
+                "backend_id": BACKEND_ID,
+                "pointer": {
+                    "backend_id": BACKEND_ID,
+                    "pointer_id": pointer_id,
+                    "source_uri": str(file_path),
+                },
+                "recall_mode": "qmd_live_local",
+                "verification_state": verification,
+            }
+        ],
+        "verification_state": verification,
+    }
+
+
 def _normalize_live_search(request: dict[str, Any], qmd_output: Any) -> dict[str, Any]:
     rows = _result_rows(qmd_output)
     items = []

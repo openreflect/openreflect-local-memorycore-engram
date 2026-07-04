@@ -104,7 +104,8 @@ def _register_tools(server: Any) -> None:
     )
     def memorycore_remember(
         memory_type: str,
-        content_ref: str,
+        content_ref: str | None = None,
+        content: str | None = None,
         pointer_id: str | None = None,
         summary_id: str | None = None,
         verification: str = "unknown",
@@ -112,10 +113,13 @@ def _register_tools(server: Any) -> None:
     ) -> dict[str, Any]:
         arguments: dict[str, Any] = {
             "memory_type": memory_type,
-            "content_ref": content_ref,
             "verification": verification,
             "client": client,
         }
+        if content_ref is not None:
+            arguments["content_ref"] = content_ref
+        if content is not None:
+            arguments["content"] = content
         if pointer_id is not None:
             arguments["pointer_id"] = pointer_id
         if summary_id is not None:

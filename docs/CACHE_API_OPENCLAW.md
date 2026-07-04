@@ -34,19 +34,29 @@ activity is distinguishable from other MCP callers after the fact.
 Arguments:
 
 - `memory_type` required enum: `file_corpus`, `transcript`
-- `content_ref` required string — a pointer to content, never content itself
+- `content_ref` string — a pointer to existing content
+- `content` string — new content for transient write-through (ADR-0005);
+  one of `content_ref` / `content` is required
 - `pointer_id` optional string, defaults to `content_ref`
 - `summary_id` optional string (transcript records)
 - `verification` optional enum, default `unknown`
 - `client` optional enum: `mcp`, `openclaw`
 
-Behavior: the record lands in the cache `pending`, stamped with a provenance
-pointer routed by memory type (`file_corpus` -> `qmd`,
+Pointer behavior: the record lands in the cache `pending`, stamped with a
+provenance pointer routed by memory type (`file_corpus` -> `qmd`,
 `transcript` -> `lossless_claw`). Returns the stamped record including its
 stable `record_id`.
 
-Raw content arguments (`snippet`, `content`, `text`, ...) are rejected at
-the argument-validation layer. OpenClaw stores pointers, not prose.
+Content behavior (write-through): the content rides the call in process
+memory only, is materialized into the dedicated QMD write collection as a
+markdown file with provenance frontmatter, indexed, and read back to earn
+`verified`. The cache stores the resulting pointer with
+`flush_state: "flushed"`; the result discloses `write_mode`
+(`live-local` or `fixture-only`). Content is never persisted in the cache,
+audit log, or provenance ledger. Transcript content fails
+`backend_unavailable` until the LCM bridge transport exists. A failed
+write-through returns a structured error and drops the content — the
+caller owns retry.
 
 ### `memorycore_recall`
 

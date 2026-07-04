@@ -91,11 +91,15 @@ now; only live OpenClaw invocation waits on the EVAL-012 hard stop.
    `verified`; LCM `describe` confirms -> `verified`) per
    `docs/LIVE_BACKEND_BOUNDARIES.md`, plus a re-verification policy so
    cached `verified` stamps can degrade (verify-on-read or TTL).
-3. Content-in-transit design: the cache is pointer-only, so `remember`
-   cannot yet carry new content. Design the flush leg that materializes
-   content into a backend (file into a dedicated QMD collection; message
-   into LCM `engine.ingest` via new host-bridge functions
-   `lcm_ingest` / `lcm_ingest_batch`) and returns a pointer to the cache.
+3. Content-in-transit: DONE for QMD (ADR-0005 transient write-through).
+   `memorycore_remember` accepts `content`; live-local mode materializes
+   it into the dedicated `memorycore-writes` collection
+   (`~/.memorycore/corpus`, config: `MEMORYCORE_QMD_WRITE_COLLECTION`,
+   `MEMORYCORE_CORPUS_DIR`, `MEMORYCORE_QMD_TIMEOUT_SECONDS`), indexes,
+   and earns `verified` via qmd:// read-back. Proven against the real
+   local QMD index 2026-07-04. Remaining: the LCM half (needs
+   `lcm_ingest` / `lcm_ingest_batch` host-bridge functions and the
+   bridge-over-MCP transport decision).
 4. Gated writes: write-intent request contract (PersistenceIntent shape),
    QMD import/reindex adapter (allowlisted CLI, isolated collection), LCM
    ingest bridge, real flush mode flag replacing fixture handlers, and
