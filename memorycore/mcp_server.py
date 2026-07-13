@@ -171,6 +171,31 @@ def _register_tools(server: Any) -> None:
     def memorycore_flush(client: str = "mcp") -> dict[str, Any]:
         return _call_surface("memorycore_flush", {"client": client})
 
+    @server.tool(
+        name="memorycore_confirm_delivery",
+        description=by_name["memorycore_confirm_delivery"]["description"],
+        structured_output=False,
+    )
+    def memorycore_confirm_delivery(
+        record_id: str,
+        outcome: str,
+        summary_id: str | None = None,
+        message_id: str | None = None,
+        conversation_id: str | None = None,
+        pointer_id: str | None = None,
+        client: str = "mcp",
+    ) -> dict[str, Any]:
+        arguments: dict[str, Any] = {"record_id": record_id, "outcome": outcome, "client": client}
+        for key, value in (
+            ("summary_id", summary_id),
+            ("message_id", message_id),
+            ("conversation_id", conversation_id),
+            ("pointer_id", pointer_id),
+        ):
+            if value is not None:
+                arguments[key] = value
+        return _call_surface("memorycore_confirm_delivery", arguments)
+
 
 def _call_surface(tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:
     try:

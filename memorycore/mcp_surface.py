@@ -45,6 +45,7 @@ CACHE_TOOL_NAMES = frozenset(
         "memorycore_recall",
         "memorycore_cache_search",
         "memorycore_flush",
+        "memorycore_confirm_delivery",
     }
 )
 
@@ -167,6 +168,24 @@ TOOL_DEFINITIONS: tuple[dict[str, Any], ...] = (
             },
         },
     },
+    {
+        "name": "memorycore_confirm_delivery",
+        "description": "Confirm or fail a callback delivery for a record awaiting delivery (ADR-0006). The executor reports the resulting backend pointer.",
+        "input_schema": {
+            "type": "object",
+            "required": ["record_id", "outcome"],
+            "additionalProperties": False,
+            "properties": {
+                "record_id": {"type": "string", "minLength": 1},
+                "outcome": {"type": "string", "enum": ["delivered", "failed"]},
+                "summary_id": {"type": "string", "minLength": 1},
+                "message_id": {"type": "string", "minLength": 1},
+                "conversation_id": {"type": "string", "minLength": 1},
+                "pointer_id": {"type": "string", "minLength": 1},
+                "client": {"type": "string", "enum": ["mcp", "openclaw"], "default": "mcp"},
+            },
+        },
+    },
 )
 
 
@@ -224,6 +243,7 @@ def _cache_request_from_tool(tool_name: str, arguments: dict[str, Any]) -> dict[
         "recall": "cache_read",
         "cache_search": "cache_search",
         "flush": "cache_flush",
+        "confirm_delivery": "cache_confirm",
     }
     if tool_name == "memorycore_recall" and not (arguments.get("record_id") or arguments.get("pointer_id")):
         raise ValueError("memorycore_recall requires record_id or pointer_id")
@@ -257,6 +277,8 @@ def _execute_cache_request(
             flushed = flush_pending(store, FIXTURE_FLUSH_BACKENDS, timestamp=_timestamp())
             result = _ok_cache_result(request, [_cache_item(record) for record in flushed])
             return {**result, "flush_mode": "fixture-only"}
+        if operation == "cache_confirm":
+            return _confirm_delivery_result(request, arguments, store)
         raise ValueError(f"unknown cache operation: {operation}")
     finally:
         store.close()
@@ -353,21 +375,15 @@ def _verify_cached_record(arguments: dict[str, Any], cache_db: Path) -> dict[str
 
 
 def _content_write_through(request: dict[str, Any], arguments: dict[str, Any], store: CacheStore) -> dict[str, Any]:
-    """ADR-0005: content rides the call, lands in the backend, cache keeps the pointer."""
+    """ADR-0005: content rides the call, lands in the backend, cache keeps the pointer.
+
+    Transcript content uses the ADR-0006 callback transport: the record is
+    cached awaiting delivery and the response carries a delivery instruction
+    for the executor (OpenClaw) to ingest natively and confirm back.
+    """
     memory_type = arguments["memory_type"]
     if memory_type != "file_corpus":
-        return {
-            "request_id": request["request_id"],
-            "operation": request["operation"],
-            "status": "error",
-            "results": [],
-            "verification_state": "unknown",
-            "error": {
-                "code": "BACKEND_UNAVAILABLE",
-                "category": "backend_unavailable",
-                "message": "Content write-through supports file_corpus only until the LCM bridge transport exists.",
-            },
-        }
+        return _callback_delivery_instruction(request, arguments, store)
 
     content = arguments["content"]
     timestamp = _timestamp()
@@ -420,6 +436,111 @@ def _content_write_through(request: dict[str, Any], arguments: dict[str, Any], s
 
     result = _ok_cache_result(request, [_cache_item(record)])
     return {**result, "selected_backend": "qmd", "write_mode": write_mode}
+
+
+def _callback_delivery_instruction(request: dict[str, Any], arguments: dict[str, Any], store: CacheStore) -> dict[str, Any]:
+    """ADR-0006: cache the record awaiting delivery, echo content response-only."""
+    content = arguments["content"]
+    timestamp = _timestamp()
+    memory_id = "memory-" + hashlib.sha256(f"{content}{timestamp}".encode()).hexdigest()[:16]
+    pointer = {"backend_id": "lossless_claw", "pointer_id": f"lcm://awaiting-delivery/{memory_id}"}
+
+    record = cache_write(
+        store,
+        {
+            "memory_type": arguments["memory_type"],
+            "content_ref": pointer["pointer_id"],
+            "source_pointer": pointer,
+            "verification": "unknown",
+            "content_hash": hashlib.sha256(content.encode("utf-8")).hexdigest(),
+        },
+        timestamp=timestamp,
+    )
+    record["flush_state"] = "awaiting_delivery"
+    record["updated_at"] = timestamp
+    store.upsert(record)
+
+    result = _ok_cache_result(request, [_cache_item(record)])
+    return {
+        **result,
+        "selected_backend": "lossless_claw",
+        "write_mode": "callback",
+        "delivery": {
+            "record_id": record["record_id"],
+            "backend_id": "lossless_claw",
+            "action": "lcm_ingest",
+            "content": content,
+        },
+    }
+
+
+def _confirm_delivery_result(request: dict[str, Any], arguments: dict[str, Any], store: CacheStore) -> dict[str, Any]:
+    """ADR-0006: the executor reports the delivery outcome and backend pointer."""
+    record = store.get(arguments["record_id"])
+    if record is None:
+        return {
+            "request_id": request["request_id"],
+            "operation": request["operation"],
+            "status": "error",
+            "results": [],
+            "verification_state": "missing",
+            "error": {
+                "code": "CACHE_MISS",
+                "category": "pointer_missing",
+                "message": "No cached record matches the requested id.",
+                "verification_state": "missing",
+            },
+        }
+
+    if record["flush_state"] != "awaiting_delivery":
+        return {
+            "request_id": request["request_id"],
+            "operation": request["operation"],
+            "status": "error",
+            "results": [],
+            "verification_state": record["verification"],
+            "error": {
+                "code": "INVALID_DELIVERY_STATE",
+                "category": "unsupported_operation",
+                "message": "Record is not awaiting delivery.",
+                "details": {"flush_state": record["flush_state"]},
+            },
+        }
+
+    timestamp = _timestamp()
+    if arguments["outcome"] == "delivered":
+        returned = {
+            key: arguments[key]
+            for key in ("summary_id", "message_id", "conversation_id", "pointer_id")
+            if arguments.get(key)
+        }
+        if not returned:
+            return {
+                "request_id": request["request_id"],
+                "operation": request["operation"],
+                "status": "error",
+                "results": [],
+                "verification_state": "unknown",
+                "error": {
+                    "code": "POINTER_MISSING",
+                    "category": "pointer_missing",
+                    "message": "A delivered confirmation must include at least one backend pointer field.",
+                },
+            }
+        record["source_pointer"] = {"backend_id": "lossless_claw", **returned}
+        record["content_ref"] = (
+            returned.get("summary_id") or returned.get("pointer_id") or returned.get("message_id")
+        )
+        record["flush_state"] = "flushed"
+        # Delivered is not proven: verification stays unknown until lcm_describe
+        # can confirm the pointer (ADR-0004 proof rules).
+        record["verification"] = "unknown"
+    else:
+        record["flush_state"] = "failed"
+
+    record["updated_at"] = timestamp
+    store.upsert(record)
+    return _ok_cache_result(request, [_cache_item(record)])
 
 
 def _cache_read_result(request: dict[str, Any], arguments: dict[str, Any], store: CacheStore) -> dict[str, Any]:

@@ -86,11 +86,15 @@ now; only live OpenClaw invocation waits on the EVAL-012 hard stop.
    default; LCM reports unavailable in live-local mode because no host
    bridge exists on the CLI/MCP surface (open design question: bridge over
    MCP). Validated by `scripts/validate_mvp_live_mode.py` with a stub qmd
-   binary and proven against the real index. The LCM transport is now
-   DECIDED: callback (ADR-0006, EN-019) — MemoryCore returns a delivery
-   instruction, OpenClaw executes the ingest natively and confirms back.
-   Remaining: build the delivery-confirmation tool and a fixture-first
-   simulated executor.
+   binary and proven against the real index. The LCM callback transport
+   (ADR-0006, EN-019) is BUILT fixture-first: transcript remembers cache
+   the record `awaiting_delivery` and return a `delivery` instruction;
+   `memorycore_confirm_delivery` closes the loop (delivered -> flushed
+   with the reported pointer, verification stays unknown until describe;
+   failed -> failed). Validated with a simulated executor in
+   `scripts/validate_mvp_callback_delivery.py`. Remaining: the OpenClaw-
+   side executor plugin and describe-based verify, both gated behind
+   EVAL-012 for live exercise.
 2. Real verification: DONE for QMD (EN-018). `memorycore_verify` with
    `record_id` in live-local mode proves against source state: disk gone ->
    `missing` (even while the index lags), disk differs from stored content

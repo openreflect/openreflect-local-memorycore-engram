@@ -99,6 +99,18 @@ EXPECTED_TOOLS: dict[str, dict[str, Any]] = {
             "client": {"type": "string", "enum": ["mcp", "openclaw"], "default": "mcp"},
         },
     },
+    "memorycore_confirm_delivery": {
+        "required": ["record_id", "outcome"],
+        "properties": {
+            "record_id": {"type": "string", "minLength": 1},
+            "outcome": {"type": "string", "enum": ["delivered", "failed"]},
+            "summary_id": {"type": "string", "minLength": 1},
+            "message_id": {"type": "string", "minLength": 1},
+            "conversation_id": {"type": "string", "minLength": 1},
+            "pointer_id": {"type": "string", "minLength": 1},
+            "client": {"type": "string", "enum": ["mcp", "openclaw"], "default": "mcp"},
+        },
+    },
 }
 
 CLI_ARGS: dict[str, tuple[str, ...]] = {

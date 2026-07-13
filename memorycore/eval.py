@@ -41,6 +41,7 @@ PUBLIC_SAFE_EVALS = (
     EvalSpec("MEMORYCORE_LIVE_MODE", ("scripts/validate_mvp_live_mode.py",)),
     EvalSpec("MEMORYCORE_WRITE_THROUGH", ("scripts/validate_mvp_write_through.py",)),
     EvalSpec("MEMORYCORE_REAL_VERIFY", ("scripts/validate_mvp_real_verify.py",)),
+    EvalSpec("MEMORYCORE_CALLBACK_DELIVERY", ("scripts/validate_mvp_callback_delivery.py",)),
     EvalSpec("MEMORYCORE_E2E_GOLDEN_PATH", ("scripts/validate_e2e_golden_path.py",)),
 )
 

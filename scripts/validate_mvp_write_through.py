@@ -113,14 +113,19 @@ def main() -> int:
             recalled = call_tool("memorycore_recall", {"record_id": item["record_id"]}, **kwargs)
             require(recalled["results"][0]["flush_state"] == "flushed", "recalled record should be flushed")
 
-            # Transcript content is rejected until the LCM transport exists.
+            # Transcript content takes the ADR-0006 callback path, not QMD.
             transcript = call_tool(
                 "memorycore_remember",
                 {"memory_type": "transcript", "content": SECRET_CONTENT},
                 **kwargs,
             )
-            require(transcript["status"] == "error", "transcript write-through should fail")
-            require(transcript["error"]["category"] == "backend_unavailable", "transcript failure category changed")
+            require(transcript["status"] == "ok", "transcript remember should return a delivery instruction")
+            require(transcript["write_mode"] == "callback", "transcript write should disclose callback mode")
+            require(
+                transcript["results"][0]["flush_state"] == "awaiting_delivery",
+                "transcript record should await delivery",
+            )
+            require(transcript["delivery"]["content"] == SECRET_CONTENT, "delivery instruction should carry content")
 
             # Remember with neither content nor content_ref is rejected.
             try:

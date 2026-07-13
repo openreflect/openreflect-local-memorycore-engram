@@ -47,16 +47,37 @@ provenance pointer routed by memory type (`file_corpus` -> `qmd`,
 `transcript` -> `lossless_claw`). Returns the stamped record including its
 stable `record_id`.
 
-Content behavior (write-through): the content rides the call in process
-memory only, is materialized into the dedicated QMD write collection as a
-markdown file with provenance frontmatter, indexed, and read back to earn
-`verified`. The cache stores the resulting pointer with
+Content behavior, `file_corpus` (write-through): the content rides the
+call in process memory only, is materialized into the dedicated QMD write
+collection as a markdown file with provenance frontmatter, indexed, and
+read back to earn `verified`. The cache stores the resulting pointer with
 `flush_state: "flushed"`; the result discloses `write_mode`
 (`live-local` or `fixture-only`). Content is never persisted in the cache,
-audit log, or provenance ledger. Transcript content fails
-`backend_unavailable` until the LCM bridge transport exists. A failed
-write-through returns a structured error and drops the content — the
-caller owns retry.
+audit log, or provenance ledger. A failed write-through returns a
+structured error and drops the content — the caller owns retry.
+
+Content behavior, `transcript` (callback, ADR-0006): the record is cached
+with `flush_state: "awaiting_delivery"` and the response carries a
+`delivery` instruction (`record_id`, `action: "lcm_ingest"`, the content —
+response-only, never persisted). The executor (OpenClaw) ingests through
+LCM's native entrance and reports back via `memorycore_confirm_delivery`.
+Awaiting-delivery records are ignored by `memorycore_flush`.
+
+### `memorycore_confirm_delivery`
+
+Arguments:
+
+- `record_id` required string — the record named in the delivery instruction
+- `outcome` required enum: `delivered`, `failed`
+- `summary_id` / `message_id` / `conversation_id` / `pointer_id` — the
+  backend pointer produced by the ingest; at least one is required when
+  `outcome` is `delivered`
+- `client` optional enum: `mcp`, `openclaw`
+
+Behavior: `delivered` updates the record's pointer and marks it `flushed`;
+verification stays `unknown` until `lcm_describe` can prove the pointer
+(delivered is not proven). `failed` marks the record `failed`. Confirming
+a record that is not awaiting delivery returns `INVALID_DELIVERY_STATE`.
 
 ### `memorycore_recall`
 
@@ -122,10 +143,17 @@ Wired into the public-safe runner as `MEMORYCORE_CACHE_API`.
 ## Expected OpenClaw call sequence
 
 ```text
-memorycore_remember  {memory_type, content_ref, client: "openclaw"}
-memorycore_flush     {client: "openclaw"}
+# file memories: synchronous write-through
+memorycore_remember  {memory_type: file_corpus, content, client: "openclaw"}
+
+# transcript memories: callback delivery
+memorycore_remember  {memory_type: transcript, content, client: "openclaw"}
+  -> response.delivery {record_id, action: lcm_ingest, content}
+  ... OpenClaw ingests natively via engine.ingest ...
+memorycore_confirm_delivery {record_id, outcome: delivered, summary_id, ...}
+
 ... session ends, later session begins ...
 memorycore_cache_search {query, client: "openclaw"}
 memorycore_recall    {record_id, client: "openclaw"}
-memorycore_verify    {pointer_id}   # freshness check via existing tool
+memorycore_verify    {record_id, client: "openclaw"}   # real proof, live-local
 ```

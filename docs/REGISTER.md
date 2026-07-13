@@ -25,7 +25,7 @@ Stable = UCXM has no − and no ?. Scores are lazy and must carry reasons.
 | EN-016 | Transient content write-through | EN-013 | built | | docs/adr/0005-transient-content-write-through.md | proven against real QMD 2026-07-04 |
 | EN-017 | Public repo with CI | EN-001 | built | | .github/workflows/ci.yml | github.com/openreflect org, leak check run |
 | EN-018 | Real backend-proof verification | GAP-001 | built | +00+ | scripts/validate_mvp_real_verify.py | U: core freshness promise; M: deterministic CLI read-back; proven on real index 2026-07-05 |
-| EN-019 | LCM callback write transport | RISK-001 | spec | +000 | docs/adr/0006-lcm-callback-write-transport.md | U: unlocks transcript writes; OpenClaw executes delivery, MemoryCore keeps receipts |
+| EN-019 | LCM callback write transport | RISK-001 | built | +000 | scripts/validate_mvp_callback_delivery.py | U: unlocks transcript writes; delivery instruction + confirm tool, simulated executor validated |
 | RISK-001 | LCM bridge cannot cross MCP | EN-009 | superseded | | docs/AGENT_CONTEXT.md | resolved by EN-019 callback decision |
 | RISK-002 | Failed write-through drops content | EN-016 | concept | | docs/adr/0005-transient-content-write-through.md | by design; spool fallback if painful |
 | RISK-003 | OpenClaw smoke awaits approval | EN-011 | deferred | | docs/OPENCLAW_INTEGRATION_SMOKE_PLAN.md | EVAL-012 hard stop; operator lifts |

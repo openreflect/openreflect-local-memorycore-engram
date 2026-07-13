@@ -27,7 +27,7 @@ DEFAULT_ROUTING: dict[str, tuple[str, ...]] = {
     "transcript": ("lossless_claw",),
 }
 
-FLUSH_STATES = frozenset({"pending", "flushed", "failed", "mirrored"})
+FLUSH_STATES = frozenset({"pending", "awaiting_delivery", "flushed", "failed", "mirrored"})
 
 FORBIDDEN_FIELDS = ("snippet", "content", "citations", "summary", "answer", "text")
 
