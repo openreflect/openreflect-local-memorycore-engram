@@ -86,8 +86,11 @@ now; only live OpenClaw invocation waits on the EVAL-012 hard stop.
    default; LCM reports unavailable in live-local mode because no host
    bridge exists on the CLI/MCP surface (open design question: bridge over
    MCP). Validated by `scripts/validate_mvp_live_mode.py` with a stub qmd
-   binary. Remaining: run against real QMD locally, decide the LCM bridge
-   transport.
+   binary and proven against the real index. The LCM transport is now
+   DECIDED: callback (ADR-0006, EN-019) — MemoryCore returns a delivery
+   instruction, OpenClaw executes the ingest natively and confirms back.
+   Remaining: build the delivery-confirmation tool and a fixture-first
+   simulated executor.
 2. Real verification: DONE for QMD (EN-018). `memorycore_verify` with
    `record_id` in live-local mode proves against source state: disk gone ->
    `missing` (even while the index lags), disk differs from stored content
@@ -95,7 +98,7 @@ now; only live OpenClaw invocation waits on the EVAL-012 hard stop.
    `unknown`. Verdicts update the cached stamp. Cache gained a
    `content_hash` column (auto-migrated). Fixture-mode record verification
    honestly returns `unsupported`. Proven on the real index 2026-07-05.
-   Remaining: LCM `describe`-based verify (needs RISK-001 transport),
+   Remaining: LCM `describe`-based verify (transport decided, ADR-0006),
    automatic re-verification policy (verify-on-read / TTL, IDEA-002).
 3. Content-in-transit: DONE for QMD (ADR-0005 transient write-through).
    `memorycore_remember` accepts `content`; live-local mode materializes
@@ -103,9 +106,9 @@ now; only live OpenClaw invocation waits on the EVAL-012 hard stop.
    (`~/.memorycore/corpus`, config: `MEMORYCORE_QMD_WRITE_COLLECTION`,
    `MEMORYCORE_CORPUS_DIR`, `MEMORYCORE_QMD_TIMEOUT_SECONDS`), indexes,
    and earns `verified` via qmd:// read-back. Proven against the real
-   local QMD index 2026-07-04. Remaining: the LCM half (needs
-   `lcm_ingest` / `lcm_ingest_batch` host-bridge functions and the
-   bridge-over-MCP transport decision).
+   local QMD index 2026-07-04. Remaining: the LCM half via the callback
+   transport (ADR-0006): delivery instruction in the remember response,
+   OpenClaw-side `engine.ingest`, and a delivery-confirmation tool.
 4. Gated writes: write-intent request contract (PersistenceIntent shape),
    QMD import/reindex adapter (allowlisted CLI, isolated collection), LCM
    ingest bridge, real flush mode flag replacing fixture handlers, and
