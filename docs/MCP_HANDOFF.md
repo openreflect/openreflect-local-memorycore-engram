@@ -5,7 +5,8 @@ Status: fixture-only contract with a real MCP server entrypoint.
 MemoryCore currently exposes MCP-shaped local functions in
 `memorycore/mcp_surface.py`. `memorycore/mcp_server.py` wraps that contract in
 the Python MCP SDK's `FastMCP` server so an MCP-capable client can launch the
-same four MVP tools. The server remains fixture-only and does not call live QMD,
+full MemoryCore tool surface (nine tools). By default the server is
+fixture-only and does not call live QMD,
 Lossless-Claw, Burrow, or OpenClaw.
 
 ## Tools
@@ -148,7 +149,7 @@ descriptor contract checked by `scripts/validate_mvp_mcp_surface.py`.
 
 The server wrapper now handles:
 
-- binding the four MVP tools into `mcp.server.fastmcp.FastMCP`
+- binding all registered MemoryCore tools into `mcp.server.fastmcp.FastMCP`
 - launching via a module entrypoint
 - reporting dependency status with `--check`
 - serializing surface exceptions into content-sparse structured tool errors

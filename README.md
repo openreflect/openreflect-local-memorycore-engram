@@ -44,8 +44,9 @@ Engram does not replace semantic search or summarization. It gives those systems
 │   blocked by EVAL-012          eval --public-safe       streamable-http       │
 └──────────────────────────────────────┬────────────────────────────────────────┘
                                        │
-                8 MCP tools / CLI verbs [LIVE]:  search · get · verify ·
-                health · remember · recall · cache_search · flush
+                9 MCP tools / CLI verbs [LIVE]:  search · get · verify ·
+                health · remember · recall · cache_search · flush ·
+                confirm_delivery
                                        │
 ┌──────────────────────────────────────▼────────────────────────────────────────┐
 │                         MEMORYCORE CONTROL PLANE                              │
@@ -61,8 +62,8 @@ Engram does not replace semantic search or summarization. It gives those systems
 │   ┌───────────────────────────────────────────────────────────────────────┐   │
 │   │ AUDIT LOG [LIVE] content-sparse, client-attributed                    │   │
 │   │ PROVENANCE LEDGER [LIVE] pointer-first records                        │   │
-│   │ VERIFICATION [WIP] vocabulary live; real backend-proof checks and     │   │
-│   │   re-verification policy are the current build frontier              │   │
+│   │ VERIFICATION [LIVE] QMD backend-proof (disk+index+hash); verdicts     │   │
+│   │   update cached stamps; LCM describe + TTL re-verification [PLAN]    │   │
 │   └───────────────────────────────────────────────────────────────────────┘   │
 └─────────────┬──────────────────────────┬───────────────────────┬──────────────┘
               │ reads [LIVE]             │ writes [LIVE]         │ [PLAN]
@@ -70,30 +71,32 @@ Engram does not replace semantic search or summarization. It gives those systems
               │ shell-out                │ write-through         │
 ┌─────────────▼───────────┐ ┌────────────▼───────────┐ ┌─────────▼──────────────┐
 │ QMD  [LIVE]             │ │ LCM (Lossless-Claw)    │ │ FUTURE BACKENDS [PLAN] │
-│ local corpus index      │ │ [WIP]                  │ │ Honcho (peer memory)   │
+│ local corpus index      │ │ [LIVE] contract        │ │ Honcho (peer memory)   │
 │ reads: live-local       │ │ transcript memory      │ │ gbrain (knowledge)     │
-│ writes: dedicated       │ │ fixture reads work;    │ │ Notion / Drive / S3    │
-│ memorycore-writes       │ │ live path blocked on   │ │ memory fabric          │
-│ collection              │ │ bridge-over-MCP        │ └────────────────────────┘
-│ proven end-to-end       │ │ transport decision     │
+│ writes: dedicated       │ │ callback delivery      │ │ Notion / Drive / S3    │
+│ memorycore-writes       │ │ built (ADR-0006); live │ │ memory fabric          │
+│ collection              │ │ executor + describe    │ └────────────────────────┘
+│ proven end-to-end       │ │ verify gated: EVAL-012 │
 │ 2026-07-04              │ └────────────────────────┘
 └─────────────────────────┘
 
 ┌───────────────────────────── EVALUATION HARNESS ──────────────────────────────┐
-│ [LIVE] 18 deterministic public-safe validators, CI green on every push        │
+│ [LIVE] 20 deterministic public-safe validators, CI green on every push        │
 │ [LIVE] local-only live evals (QMD real index, LCM synthetic store)            │
 │ [GATE] EVAL-012 OpenClaw integration smoke -> unlocks the final MVP verdict   │
 └────────────────────────────────────────────────────────────────────────────────┘
 
-The proven loop (2026-07-04): an OpenClaw-shaped caller sent remember(content)
--> the cache stamped a provenance pointer -> the content was materialized as a
-markdown file with provenance frontmatter -> QMD indexed it -> read-back earned
-a "verified" stamp -> recall served the pointer from cache -> QMD's own search
-finds the memory.
+Proven loops on the real local index:
+- Write (2026-07-04): remember(content) -> cache stamps pointer -> markdown
+  materialized with provenance frontmatter -> QMD indexes -> read-back earns
+  "verified" -> recall hits cache -> QMD search finds the memory.
+- Verify (2026-07-05): a memory whose source file was deleted honestly flipped
+  to "missing" (despite index lag); a modified source flips to "stale"; the
+  intact one re-proved "verified" — verdicts persist to the cached stamps.
 
-Currently being worked on: real backend-proof verification (replacing the
-caller-asserted stub) and the LCM bridge-over-MCP transport decision that
-unblocks live transcript memory.
+Remaining before the MVP verdict: the OpenClaw-side delivery executor and
+LCM describe-verify (both exercised live only after the EVAL-012 hard stop is
+lifted), plus operational hardening (WAL, request ids, idempotency, retry).
 ```
 
 ## What OpenReflect-Local-MemoryCore-Engram manages
@@ -121,11 +124,16 @@ unblocks live transcript memory.
 ├── AGENTS.md
 ├── README.md
 ├── docs/
+│   ├── REGISTER.md                  (QTrellis product register)
 │   ├── ARCHITECTURE.md
+│   ├── AGENT_CONTEXT.md             (first-load map for agent sessions)
+│   ├── CACHING_MEMORY_ROUTER.md
+│   ├── CACHE_API_OPENCLAW.md
 │   ├── MVP_READINESS_LEDGER.md
 │   ├── MVP_EVAL_PLAN.md
 │   ├── OPENCLAW_INTEGRATION_SMOKE_PLAN.md
-│   └── PRD.md
+│   ├── PRD.md
+│   └── adr/                         (0001..0006)
 ├── examples/
 │   └── memory-record.example.json
 ├── fixtures/
@@ -139,8 +147,11 @@ unblocks live transcript memory.
 │   └── requests/
 ├── memorycore/
 │   ├── audit_log.py
+│   ├── cache_router.py
 │   ├── cli.py
+│   ├── eval.py
 │   ├── lcm_adapter.py
+│   ├── mcp_server.py
 │   ├── mcp_surface.py
 │   ├── provenance_ledger.py
 │   ├── qmd_adapter.py
@@ -155,18 +166,8 @@ unblocks live transcript memory.
 │   ├── request.schema.json
 │   └── result.schema.json
 └── scripts/
-    ├── validate_memory_record.py
-    ├── validate_mvp_cli.py
-    ├── validate_mvp_mcp_surface.py
-    ├── validate_mvp_audit_log.py
-    ├── validate_mvp_packet_a.py
-    ├── validate_mvp_packet_b.py
-    ├── validate_mvp_packet_c.py
-    ├── validate_mvp_lcm_adapter.py
-    ├── validate_mvp_qmd_adapter.py
-    ├── validate_mvp_provenance_ledger.py
-    ├── validate_mvp_verification_state.py
-    └── validate_mvp_router.py
+    └── validate_*.py                (20 deterministic public-safe validators
+                                      plus local-only live evals and helpers)
 ```
 
 ## Feature treemap
@@ -194,6 +195,7 @@ ENGRAM / MEMORYCORE
 │   ├── [✔] Provenance pointer ledger
 │   ├── [✔] Verification states (verified/stale/missing/unsupported/unknown)
 │   ├── [✔] "Never present unknown as verified" rule
+│   ├── [✔] Real backend-proof verification (QMD: disk+index+hash, stamps update)
 │   ├── [○] Git-native provenance engine
 │   │   ├── [○] Commit pointers & content hashes
 │   │   ├── [○] Diff-based staleness checks
@@ -207,12 +209,13 @@ ENGRAM / MEMORYCORE
 │   ├── [✔] Backend registry, capability probe, health
 │   ├── [✔] Request normalization + deterministic intent routing
 │   ├── [✔] Mock backend + fixtures
-│   ├── [◐] QMD adapter (fixtures done; live-local shell-out partial)
-│   ├── [◐] Lossless-Claw (LCM) adapter (fixtures done; host bridge partial)
+│   ├── [✔] Caching memory router + OpenClaw cache API (remember/recall/flush)
+│   ├── [✔] QMD adapter (live reads, transient write-through, real verify)
+│   ├── [◐] Lossless-Claw (LCM) adapter (callback contract built; live executor gated)
 │   ├── [○] Backend control ops (register, doctor, reindex, observe-only)
 │   ├── [○] Mirroring & splitting policies (one event → many backends)
 │   ├── [○] Honcho adapter (peer/session reasoning)
-│   ├── [○/·] Gated write & import adapters (append-only, policy-routed)
+│   ├── [◐] Gated write & import adapters (QMD write-through + LCM callback built)
 │   ├── [·] gbrain adapter (knowledge-brain pages)
 │   └── [·] Backend classes taxonomy (corpus / transcript / peer / brain / fabric)
 │
@@ -235,7 +238,7 @@ ENGRAM / MEMORYCORE
 │   └── [○] Insight-plugin lane (scoped mining jobs, privacy gates)
 │
 ├── 6. EVALUATION & VALIDATION
-│   ├── [✔] 13+ deterministic public-safe validators + consolidated runner
+│   ├── [✔] 20 deterministic public-safe validators + consolidated runner
 │   ├── [✔] Fixture corpus (8 families) + CI on every push
 │   ├── [✔] Parallel agent work packets (PACKET-01…10)
 │   ├── [◐] E2E golden path (CLI+MCP pass; OpenClaw leg blocked)
@@ -270,7 +273,14 @@ ENGRAM / MEMORYCORE
 
 ## Current status
 
-OpenReflect-Local-MemoryCore-Engram is staged as a public skeleton. The current implementation defines the product frame, architecture, synthetic memory-record schema, and deterministic validation.
+The control plane is operational: a caching memory router (SQLite as
+provenance anchor) sits behind a nine-tool MCP surface and CLI, with live
+QMD reads, transient content write-through into a dedicated collection, real
+backend-proof verification (both proven against a real local index), and the
+callback delivery contract for LCM transcript writes (ADR-0006). Fixture mode
+remains the public-safe default; live paths sit behind explicit env flags.
+Product state is tracked as a QTrellis register in `docs/REGISTER.md`; agent
+sessions start from `docs/AGENT_CONTEXT.md`.
 
 EVAL-012 OpenClaw integration smoke is planned but not executed. The smoke
 boundary and stop conditions are documented in
@@ -300,38 +310,20 @@ memorycore eval --public-safe
 The direct module command remains the canonical compatibility path for agents
 and scripts that run from a checkout.
 
-Or run the individual validation scripts directly:
-
-```bash
-python3 scripts/validate_memory_record.py examples/memory-record.example.json
-python3 scripts/validate_mvp_packet_a.py
-python3 scripts/validate_mvp_packet_b.py
-python3 scripts/validate_mvp_packet_c.py
-python3 scripts/validate_mvp_router.py
-python3 scripts/validate_mvp_qmd_adapter.py
-python3 scripts/validate_mvp_lcm_adapter.py
-python3 scripts/validate_mvp_provenance_ledger.py
-python3 scripts/validate_mvp_verification_state.py
-python3 scripts/validate_mvp_audit_log.py
-python3 scripts/validate_mvp_cli.py
-python3 scripts/validate_mvp_mcp_surface.py
-```
-
-Expected output:
+The consolidated run executes all 20 public-safe validators; each can also be
+run directly (`python3 scripts/validate_mvp_<name>.py`), printing its OK token:
 
 ```text
-ENGRAM_MEMORY_RECORD_OK
-MEMORYCORE_PACKET_A_OK
-MEMORYCORE_PACKET_B_OK
-MEMORYCORE_PACKET_C_OK
-MEMORYCORE_ROUTER_OK
-MEMORYCORE_QMD_ADAPTER_OK
-MEMORYCORE_LCM_ADAPTER_OK
-MEMORYCORE_PROVENANCE_LEDGER_OK
-MEMORYCORE_VERIFICATION_STATE_OK
-MEMORYCORE_AUDIT_LOG_OK
-MEMORYCORE_CLI_OK
-MEMORYCORE_MCP_SURFACE_OK
+ENGRAM_MEMORY_RECORD_OK          MEMORYCORE_CONTRACT_SECURITY_OK
+MEMORYCORE_PACKET_A_OK           MEMORYCORE_CACHE_ROUTER_OK
+MEMORYCORE_PACKET_B_OK           MEMORYCORE_CACHE_API_OK
+MEMORYCORE_PACKET_C_OK           MEMORYCORE_LIVE_MODE_OK
+MEMORYCORE_ROUTER_OK             MEMORYCORE_WRITE_THROUGH_OK
+MEMORYCORE_QMD_ADAPTER_OK        MEMORYCORE_REAL_VERIFY_OK
+MEMORYCORE_LCM_ADAPTER_OK        MEMORYCORE_CALLBACK_DELIVERY_OK
+MEMORYCORE_PROVENANCE_LEDGER_OK  MEMORYCORE_E2E_GOLDEN_PATH_OK
+MEMORYCORE_VERIFICATION_STATE_OK MEMORYCORE_CLI_OK
+MEMORYCORE_AUDIT_LOG_OK          MEMORYCORE_MCP_SURFACE_OK
 ```
 
 ## Public/private model

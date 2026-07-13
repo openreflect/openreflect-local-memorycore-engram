@@ -1,7 +1,7 @@
 # MVP Readiness Ledger
 
-Date: 2026-06-23
-Status: Draft evidence ledger
+Date: 2026-07-14 (originally 2026-06-23)
+Status: Evidence ledger; per-item state now also tracked in `docs/REGISTER.md`
 
 This ledger reconciles the current MVP state without changing implementation or
 running gated evals. It is a coordination artifact for deciding whether the
@@ -10,12 +10,16 @@ MVP boundary.
 
 ## Current Verdict
 
-MemoryCore is a credible fixture-first MVP kernel, not a complete OpenClaw MVP.
+MemoryCore is a working local control plane with one backend proven live,
+not yet a complete OpenClaw MVP.
 
-The implementation currently proves normalized contracts, routing, adapter
-fixtures, verification states, provenance/audit behavior, CLI behavior, MCP
-surface behavior, local-only backend boundaries, packaging, and public-safe
-golden-path scaffolding.
+The implementation proves normalized contracts, routing, verification states,
+provenance/audit behavior, CLI/MCP surfaces, and — beyond the original kernel —
+a caching memory router (SQLite as provenance anchor), live-local QMD reads,
+transient content write-through into a dedicated collection, real
+backend-proof verification with stamp updates (all three proven against the
+operator's real QMD index), and the ADR-0006 callback delivery contract for
+LCM transcript writes validated with a simulated executor.
 
 The MVP completion claim remains blocked until EVAL-012 is explicitly approved
 and run, and until the public-safe eval route is green after cleanup or artifact
@@ -34,6 +38,10 @@ isolation.
 | Audit and provenance | Complete for content-sparse MVP behavior | `memorycore/audit_log.py`, `memorycore/provenance_ledger.py`, `docs/adr/0002-content-sparse-audit-provenance.md` | Inspect retained smoke artifacts after any integration run. |
 | CLI surface | Complete for public-safe MVP kernel | `memorycore/cli.py`, `memorycore/eval.py`, `README.md` | Re-run public-safe evals after EVAL-012 cleanup or artifact isolation. |
 | MCP surface and server entrypoint | Complete for local public-safe handoff | `memorycore/mcp_surface.py`, `memorycore/mcp_server.py`, `docs/MCP_HANDOFF.md` | EVAL-012 must select the actual OpenClaw caller path before execution. |
+| Caching memory router and cache API | Complete for fixture and live-local QMD | `memorycore/cache_router.py`, `docs/CACHE_API_OPENCLAW.md`, `scripts/validate_mvp_cache_router.py`, `scripts/validate_mvp_cache_api.py` | LCM leg gated on EVAL-012 executor. |
+| Live-local QMD reads, write-through, real verify | Proven on operator's real index (2026-07-04/05) | `scripts/validate_mvp_live_mode.py`, `scripts/validate_mvp_write_through.py`, `scripts/validate_mvp_real_verify.py`, `docs/adr/0005-transient-content-write-through.md` | Local proof is not production QMD readiness. |
+| LCM callback delivery contract | Complete fixture-first with simulated executor | `docs/adr/0006-lcm-callback-write-transport.md`, `scripts/validate_mvp_callback_delivery.py` | OpenClaw-side executor plugin and describe-verify gated on EVAL-012. |
+| Public repo, CI, product register | Complete | github.com/openreflect/openreflect-local-memorycore-engram, `.github/workflows/ci.yml`, `docs/REGISTER.md` | Keep register and docs reconciled per commit. |
 | Public-safe golden path | Partial | `scripts/validate_e2e_golden_path.py`, EVAL-013 notes in `docs/MVP_EVAL_PLAN.md` | OpenClaw caller leg remains gated on EVAL-012. |
 | OpenClaw integration smoke | Blocked by design | `docs/OPENCLAW_INTEGRATION_SMOKE_PLAN.md`, `docs/evals/EVAL-012_OPENCLAW_SMOKE_RUN_NOTE.md` | Requires explicit hard-stop lift, approval source/timestamp, caller path, backend mode, entrypoint, audit path, cleanup action, and stop-condition reviewer. |
 | Final MVP verdict | Blocked | Assessment reports and this ledger | Requires approved EVAL-012 result plus green public-safe eval route afterward. |
@@ -42,7 +50,9 @@ isolation.
 
 - OpenClaw integration works.
 - The MVP is complete.
-- Production live QMD and Lossless-Claw backends are proven.
+- Live LCM delivery works (the contract is validated only against a
+  simulated executor).
+- Local live-QMD proof generalizes to production deployments.
 - Public-safe fixture confidence is equivalent to live backend readiness.
 
 ## Shortest Remaining Path
