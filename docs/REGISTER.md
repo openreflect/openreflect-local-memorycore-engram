@@ -18,7 +18,7 @@ Stable = UCXM has no − and no ?. Scores are lazy and must carry reasons.
 | EN-009 | LCM host-bridge adapter | EN-004 | built | | memorycore/lcm_adapter.py | ADR-0004; fixture plus bridge protocol |
 | EN-010 | CLI developer surface | EN-003 | built | | memorycore/cli.py | search get verify health audit eval |
 | EN-011 | MCP surface and server | EN-003 | built | | memorycore/mcp_server.py | FastMCP stdio/sse/http |
-| EN-012 | Public-safe eval runner | EN-001 | built | | memorycore/eval.py | 18 validators, CI on push |
+| EN-012 | Public-safe eval runner | EN-001 | built | | memorycore/eval.py | 20 validators, CI on push |
 | EN-013 | Caching memory router | — | built | | memorycore/cache_router.py | theme: Cache; SQLite as provenance anchor |
 | EN-014 | OpenClaw cache API tools | EN-013 | built | | docs/CACHE_API_OPENCLAW.md | remember recall cache_search flush |
 | EN-015 | Live-local backend mode switch | EN-008 | built | | scripts/validate_mvp_live_mode.py | MEMORYCORE_BACKEND_MODE; fixture default |
@@ -26,6 +26,7 @@ Stable = UCXM has no − and no ?. Scores are lazy and must carry reasons.
 | EN-017 | Public repo with CI | EN-001 | built | | .github/workflows/ci.yml | github.com/openreflect org, leak check run |
 | EN-018 | Real backend-proof verification | GAP-001 | built | +00+ | scripts/validate_mvp_real_verify.py | U: core freshness promise; M: deterministic CLI read-back; proven on real index 2026-07-05 |
 | EN-019 | LCM callback write transport | RISK-001 | built | +000 | scripts/validate_mvp_callback_delivery.py | U: unlocks transcript writes; delivery instruction + confirm tool, simulated executor validated |
+| EN-020 | JSONL local file backend | EN-013 | concept | | docs/CACHING_MEMORY_ROUTER.md | zero-dependency default backend; append-only, git-trackable, git-native provenance candidate; third backend proves abstraction |
 | RISK-001 | LCM bridge cannot cross MCP | EN-009 | superseded | | docs/AGENT_CONTEXT.md | resolved by EN-019 callback decision |
 | RISK-002 | Failed write-through drops content | EN-016 | concept | | docs/adr/0005-transient-content-write-through.md | by design; spool fallback if painful |
 | RISK-003 | OpenClaw smoke awaits approval | EN-011 | deferred | | docs/OPENCLAW_INTEGRATION_SMOKE_PLAN.md | EVAL-012 hard stop; operator lifts |
