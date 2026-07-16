@@ -1,35 +1,34 @@
 # EVAL-012 OpenClaw Integration Smoke Run Note
 
-Date: not run
-Status: not-run-by-design
+Date: approved 2026-07-17, execution in progress
+Status: hard stop lifted; staged execution authorized
 Related plan: `docs/OPENCLAW_INTEGRATION_SMOKE_PLAN.md`
 
 ## Gate State
 
-EVAL-012 has not been approved or executed.
-
-The current hard stop remains active. Do not run Burrow runtime tests, OpenClaw
-integration tests, live OpenClaw gateway calls, or the public-safe eval runner
-as part of this note.
-
-Prep checkpoint, 2026-06-23T17:59Z: the repo was clean before this
-documentation-only update, all required execution fields below remained
-`missing`, and no runtime, gateway, live-backend, or eval command was run.
+The integration hard stop was explicitly lifted by Mitchell on 2026-07-17 in
+the working Claude Code session: "Let's get this fully tested with OpenClaw...
+discover the issues and get this thing on a loop tonight." Execution is
+authorized in the isolated `glasshouse` WSL distro only — a fresh environment
+with no private memory stores, no production OpenClaw config, and no access to
+the operator's live transcripts. The operator's primary OpenClaw installation
+is out of scope and must not be touched.
 
 ## Required Before Execution
 
 | Field | Value |
 | --- | --- |
-| Approval source | missing |
-| Approval timestamp | missing |
-| Caller path | missing |
-| Backend mode | missing |
-| Entrypoint | missing |
-| Audit file path | missing |
-| Cleanup action | missing |
-| Stop-condition reviewer | missing |
+| Approval source | Mitchell, in-session instruction (Claude Code, Engram working session) |
+| Approval timestamp | 2026-07-17 |
+| Caller path | OpenClaw 2026.7.1 in isolated glasshouse WSL distro, calling the memorycore MCP server over stdio |
+| Backend mode | staged: fixture-only first run, then live-local (jsonl_store + isolated glasshouse qmd test collection); no private stores exist in glasshouse |
+| Entrypoint | `MEMORYCORE_MCP_AUDIT_LOG=/tmp/eval012-audit.jsonl /home/lumen/openreflect-local-memorycore-engram/.venv/bin/python -m memorycore.mcp_server --transport stdio` |
+| Audit file path | `/tmp/eval012-audit.jsonl` inside glasshouse (temporary, outside any repo) |
+| Cleanup action | delete temporary audit/provenance artifacts in glasshouse /tmp after recording results; glasshouse .memorycore stores are isolated synthetic evidence and never committed |
+| Stop-condition reviewer | Alice (Claude) first per prepared defaults; Mitchell if approval scope or private-content risk changes |
 
-If any field remains `missing`, the smoke must not start.
+All required fields are filled; execution may proceed under the smoke plan's
+stop conditions.
 
 ## Alice-Preparable Defaults
 
