@@ -80,6 +80,39 @@ def write_viewer(cache_db: Path, audit_log: Path, output: Path) -> Path:
     return output
 
 
+def serve_viewer(cache_db: Path, audit_log: Path, *, port: int = 8787) -> None:
+    """Serve the dashboard live on localhost, regenerated per request.
+
+    Loopback-only by design: the receipts surface is a local operator
+    console, never a network service. GET / renders fresh HTML; the page
+    polls GET /data.json every few seconds so state changes appear live.
+    """
+    import http.server
+    import json as _json
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self) -> None:  # noqa: N802 - http.server API
+            if self.path.split("?")[0] == "/data.json":
+                body = _json.dumps(collect_viewer_data(cache_db, audit_log)).encode("utf-8")
+                ctype = "application/json"
+            else:
+                body = render_html(collect_viewer_data(cache_db, audit_log)).encode("utf-8")
+                ctype = "text/html; charset=utf-8"
+            self.send_response(200)
+            self.send_header("Content-Type", ctype)
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *args: Any) -> None:  # quiet by default
+            pass
+
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", port), Handler)
+    print(f"Engram receipts live at http://127.0.0.1:{port} (Ctrl-C to stop)")
+    server.serve_forever()
+
+
 _TEMPLATE = r"""<!doctype html>
 <html lang="en">
 <head>
@@ -206,7 +239,7 @@ _TEMPLATE = r"""<!doctype html>
 </section>
 <footer id="foot"></footer>
 <script>
-const DATA = __ENGRAM_DATA__;
+let DATA = __ENGRAM_DATA__;
 const V = {
   verified:   { color: "var(--good)",     ic: "✓", label: "verified" },
   stale:      { color: "var(--warning)",  ic: "⚠", label: "stale" },
@@ -220,11 +253,18 @@ const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;
 const badge = state => { const v = V[state] || V.unknown;
   return `<span class="badge"><span class="ic" style="color:${v.color}">${v.ic}</span>${v.label}</span>`; };
 
-document.getElementById("gen").textContent = "Generated " + DATA.generated_at;
+const tip = document.getElementById("tip");
+function showTip(e, html) { tip.innerHTML = html; tip.style.opacity = 1;
+  tip.style.left = Math.min(e.clientX + 14, innerWidth - 220) + "px"; tip.style.top = (e.clientY + 14) + "px"; }
+function hideTip() { tip.style.opacity = 0; }
+
+let records = [];
+function renderAll() {
+document.getElementById("gen").textContent = "Generated " + DATA.generated_at + (LIVE ? " · live" : " · snapshot");
 document.getElementById("foot").textContent =
   `cache: ${DATA.cache_db} · audit: ${DATA.audit_log} · local-first, content-sparse — pointers and hashes only, never memory content`;
 
-const vc = DATA.verification_counts, records = DATA.records, total = records.length;
+const vc = DATA.verification_counts; records = DATA.records; const total = records.length;
 const tiles = [
   { label: "memories", value: total, dot: null },
   { label: "verified", value: vc.verified || 0, dot: "var(--good)" },
@@ -236,11 +276,6 @@ const tiles = [
 document.getElementById("tiles").innerHTML = tiles.map(t =>
   `<div class="tile"><div class="label">${t.dot ? `<span class="dot" style="background:${t.dot}"></span>` : ""}${t.label}</div>
    <div class="value">${t.value}</div></div>`).join("");
-
-const tip = document.getElementById("tip");
-function showTip(e, html) { tip.innerHTML = html; tip.style.opacity = 1;
-  tip.style.left = Math.min(e.clientX + 14, innerWidth - 220) + "px"; tip.style.top = (e.clientY + 14) + "px"; }
-function hideTip() { tip.style.opacity = 0; }
 
 const sb = document.getElementById("stackbar");
 const order = ["verified","stale","missing","unsupported","unknown"];
@@ -281,7 +316,32 @@ tbody.innerHTML = records.length === 0 ? '<tr><td colspan="7" class="empty">cach
       <td>${esc((r.updated_at || "").replace("T", " ").replace("Z", ""))}</td></tr>`;
   }).join("");
 
-tbody.addEventListener("click", e => {
+document.getElementById("audit").innerHTML = DATA.audit.length === 0 ?
+  '<div class="empty">no audit events</div>' :
+  DATA.audit.slice(0, 60).map(a => `<div class="audit-row">
+    <span class="t mono">${esc((a.timestamp || "").replace("T", " ").replace("Z", ""))}</span>
+    <span>${esc(a.operation)}</span>
+    <span><span class="dot" style="background:${backendColor(a.selected_backend)}"></span> ${esc(a.selected_backend || "—")}</span>
+    <span>${badge(a.verification_state)} ${a.status === "error" ? `<span class="badge"><span class="ic" style="color:var(--critical)">⊘</span>${esc((a.error_state||{}).code || "error")}</span>` : ""}</span>
+    <span class="mono" style="color:var(--muted)">${esc(a.audit_id)}</span>
+  </div>`).join("");
+}
+
+let LIVE = false;
+renderAll();
+async function poll() {
+  try {
+    const res = await fetch("data.json", { cache: "no-store" });
+    if (!res.ok) return;
+    const fresh = await res.json();
+    if (JSON.stringify(fresh) !== JSON.stringify(DATA)) { DATA = fresh; renderAll(); }
+    if (!LIVE) { LIVE = true; renderAll(); }
+  } catch (e) { /* static snapshot (file or artifact) — polling unavailable */ }
+}
+poll(); setInterval(poll, 4000);
+
+const tbody2 = document.querySelector("#memtable tbody");
+tbody2.addEventListener("click", e => {
   const row = e.target.closest("tr.mem"); if (!row) return;
   const open = row.nextElementSibling?.classList.contains("detail");
   document.querySelectorAll("tr.detail").forEach(d => d.remove());
@@ -304,16 +364,6 @@ state    ${esc(r.verification)} / ${esc(r.flush_state)}</pre></div>
   </div></td>`;
   row.after(d);
 });
-
-document.getElementById("audit").innerHTML = DATA.audit.length === 0 ?
-  '<div class="empty">no audit events</div>' :
-  DATA.audit.slice(0, 60).map(a => `<div class="audit-row">
-    <span class="t mono">${esc((a.timestamp || "").replace("T", " ").replace("Z", ""))}</span>
-    <span>${esc(a.operation)}</span>
-    <span><span class="dot" style="background:${backendColor(a.selected_backend)}"></span> ${esc(a.selected_backend || "—")}</span>
-    <span>${badge(a.verification_state)} ${a.status === "error" ? `<span class="badge"><span class="ic" style="color:var(--critical)">⊘</span>${esc((a.error_state||{}).code || "error")}</span>` : ""}</span>
-    <span class="mono" style="color:var(--muted)">${esc(a.audit_id)}</span>
-  </div>`).join("");
 
 function toggleTheme() {
   const root = document.documentElement;

@@ -54,9 +54,12 @@ def main(argv: list[str] | None = None) -> int:
             result = run_public_safe_eval()
             return _emit(result, args.json, ok=result["status"] == "ok")
         if args.command == "viewer":
-            from memorycore.viewer import write_viewer
+            from memorycore.viewer import serve_viewer, write_viewer
 
             cache_db = Path(os.environ.get("MEMORYCORE_CACHE_DB", ROOT / ".memorycore" / "cache.sqlite3"))
+            if args.serve:
+                serve_viewer(cache_db, Path(args.audit_log), port=args.port)
+                return 0
             output = write_viewer(cache_db, Path(args.audit_log), Path(args.output))
             return _emit({"status": "ok", "viewer": str(output)}, args.json)
 
@@ -114,6 +117,8 @@ def _parser() -> argparse.ArgumentParser:
 
     viewer = subparsers.add_parser("viewer")
     viewer.add_argument("--output", default=str(ROOT / ".memorycore" / "viewer.html"))
+    viewer.add_argument("--serve", action="store_true")
+    viewer.add_argument("--port", type=int, default=8787)
 
     return parser
 
