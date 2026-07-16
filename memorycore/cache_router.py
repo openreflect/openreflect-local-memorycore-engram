@@ -25,6 +25,7 @@ from memorycore.verification_state import normalize_verification_state, state_fr
 DEFAULT_ROUTING: dict[str, tuple[str, ...]] = {
     "file_corpus": ("qmd",),
     "transcript": ("lossless_claw",),
+    "local": ("jsonl_store",),
 }
 
 FLUSH_STATES = frozenset({"pending", "awaiting_delivery", "flushed", "failed", "mirrored"})

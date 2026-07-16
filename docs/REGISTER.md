@@ -26,7 +26,7 @@ Stable = UCXM has no − and no ?. Scores are lazy and must carry reasons.
 | EN-017 | Public repo with CI | EN-001 | built | | .github/workflows/ci.yml | github.com/openreflect org, leak check run |
 | EN-018 | Real backend-proof verification | GAP-001 | built | +00+ | scripts/validate_mvp_real_verify.py | U: core freshness promise; M: deterministic CLI read-back; proven on real index 2026-07-05 |
 | EN-019 | LCM callback write transport | RISK-001 | built | +000 | scripts/validate_mvp_callback_delivery.py | U: unlocks transcript writes; delivery instruction + confirm tool, simulated executor validated |
-| EN-020 | JSONL local file backend | EN-013 | concept | | docs/CACHING_MEMORY_ROUTER.md | zero-dependency default backend; append-only, git-trackable, git-native provenance candidate; third backend proves abstraction |
+| EN-020 | JSONL local file backend | EN-013 | built | | scripts/validate_mvp_jsonl_backend.py | zero-dependency third backend; memory_type local, write-through + hash verify in every mode; git-native provenance candidate |
 | EN-021 | Attributed multi-backend recall | EN-013 | concept | | docs/CACHING_MEMORY_ROUTER.md | router becomes synthesizer: fan-out reads, attributed merge; design merge contract before OG-003 envelope freezes |
 | RISK-001 | LCM bridge cannot cross MCP | EN-009 | superseded | | docs/AGENT_CONTEXT.md | resolved by EN-019 callback decision |
 | RISK-002 | Failed write-through drops content | EN-016 | concept | | docs/adr/0005-transient-content-write-through.md | by design; spool fallback if painful |

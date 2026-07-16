@@ -66,8 +66,10 @@ python3 -m memorycore.cli eval --public-safe
   `cache_write` rejects `snippet` / `content` / `citations` / `summary` /
   `answer` / `text`.
 - Routing by memory type: `file_corpus` -> `qmd`,
-  `transcript` -> `lossless_claw`. Multi-target routing marks records
-  `mirrored`.
+  `transcript` -> `lossless_claw`, `local` -> `jsonl_store` (EN-020:
+  zero-dependency JSONL backend, `MEMORYCORE_JSONL_STORE`, write-through
+  and hash-based verify work in every mode). Multi-target routing marks
+  records `mirrored`.
 - Flush is currently fixture-only: handlers acknowledge without delivering.
   Results disclose `flush_mode: "fixture-only"`. Do not remove that
   disclosure until real gated write adapters exist.

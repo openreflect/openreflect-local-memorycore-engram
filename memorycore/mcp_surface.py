@@ -23,10 +23,22 @@ from memorycore.cache_router import (
     flush_pending,
 )
 from memorycore.cli import DEFAULT_AUDIT_LOG, ROOT, _execute_request, resolve_backend_mode
+from memorycore.jsonl_adapter import (
+    jsonl_search,
+    jsonl_verify,
+    jsonl_write,
+    memory_id_from_pointer,
+)
 from memorycore.qmd_adapter import DEFAULT_QMD_BIN, live_local_qmd_verify, live_local_qmd_write
 
 DEFAULT_WRITE_COLLECTION = "memorycore-writes"
 DEFAULT_CORPUS_DIR = "~/.memorycore/corpus"
+DEFAULT_JSONL_STORE = ROOT / ".memorycore" / "jsonl-store.jsonl"
+
+
+def _jsonl_store_path() -> Path:
+    override = os.environ.get("MEMORYCORE_JSONL_STORE")
+    return Path(override).expanduser() if override else DEFAULT_JSONL_STORE
 
 
 DEFAULT_CACHE_DB = ROOT / ".memorycore" / "cache.sqlite3"
@@ -115,7 +127,7 @@ TOOL_DEFINITIONS: tuple[dict[str, Any], ...] = (
             "required": ["memory_type"],
             "additionalProperties": False,
             "properties": {
-                "memory_type": {"type": "string", "enum": ["file_corpus", "transcript"]},
+                "memory_type": {"type": "string", "enum": ["file_corpus", "transcript", "local"]},
                 "content_ref": {"type": "string", "minLength": 1},
                 "content": {"type": "string", "minLength": 1},
                 "pointer_id": {"type": "string", "minLength": 1},
@@ -151,7 +163,7 @@ TOOL_DEFINITIONS: tuple[dict[str, Any], ...] = (
             "additionalProperties": False,
             "properties": {
                 "query": {"type": "string", "minLength": 1},
-                "memory_type": {"type": "string", "enum": ["file_corpus", "transcript"]},
+                "memory_type": {"type": "string", "enum": ["file_corpus", "transcript", "local"]},
                 "limit": {"type": "integer", "minimum": 1, "maximum": 50, "default": 5},
                 "client": {"type": "string", "enum": ["mcp", "openclaw"], "default": "mcp"},
             },
@@ -337,6 +349,31 @@ def _verify_cached_record(arguments: dict[str, Any], cache_db: Path) -> dict[str
             }
 
         backend_id = record["source_pointer"].get("backend_id")
+
+        if backend_id == "jsonl_store":
+            state = jsonl_verify(
+                _jsonl_store_path(),
+                memory_id_from_pointer(record["source_pointer"].get("pointer_id", "")),
+                expected_hash=record.get("content_hash") or None,
+            )
+            record["verification"] = state
+            record["updated_at"] = _timestamp()
+            store.upsert(record)
+            return {
+                **request,
+                "status": "ok",
+                "selected_backend": "jsonl_store",
+                "results": [
+                    {
+                        "backend_id": "jsonl_store",
+                        "pointer": record["source_pointer"],
+                        "verification_state": state,
+                        "record_id": record["record_id"],
+                    }
+                ],
+                "verification_state": state,
+            }
+
         if resolve_backend_mode() != "live-local" or backend_id != "qmd":
             return {
                 **request,
@@ -346,7 +383,7 @@ def _verify_cached_record(arguments: dict[str, Any], cache_db: Path) -> dict[str
                 "error": {
                     "code": "VERIFICATION_UNSUPPORTED",
                     "category": "verification_unsupported",
-                    "message": "Real verification requires live-local mode and a qmd-backed record.",
+                    "message": "Real verification requires a jsonl_store record, or live-local mode for qmd.",
                     "verification_state": "unsupported",
                 },
             }
@@ -382,6 +419,8 @@ def _content_write_through(request: dict[str, Any], arguments: dict[str, Any], s
     for the executor (OpenClaw) to ingest natively and confirm back.
     """
     memory_type = arguments["memory_type"]
+    if memory_type == "local":
+        return _jsonl_write_through(request, arguments, store)
     if memory_type != "file_corpus":
         return _callback_delivery_instruction(request, arguments, store)
 
@@ -436,6 +475,44 @@ def _content_write_through(request: dict[str, Any], arguments: dict[str, Any], s
 
     result = _ok_cache_result(request, [_cache_item(record)])
     return {**result, "selected_backend": "qmd", "write_mode": write_mode}
+
+
+def _jsonl_write_through(request: dict[str, Any], arguments: dict[str, Any], store: CacheStore) -> dict[str, Any]:
+    """EN-020: zero-dependency write-through into the local JSONL store.
+
+    Works in every backend mode — the store is a local file, so there is no
+    external dependency to gate on and verification is proof-based always.
+    """
+    content = arguments["content"]
+    timestamp = _timestamp()
+    memory_id = "memory-" + hashlib.sha256(f"{content}{timestamp}".encode()).hexdigest()[:16]
+
+    written = jsonl_write(
+        _jsonl_store_path(),
+        memory_id=memory_id,
+        content=content,
+        memory_type="local",
+        client_surface=arguments.get("client", "mcp"),
+        timestamp=timestamp,
+    )
+
+    record = cache_write(
+        store,
+        {
+            "memory_type": "local",
+            "content_ref": written["pointer"]["pointer_id"],
+            "source_pointer": written["pointer"],
+            "verification": written["verification_state"],
+            "content_hash": written["content_hash"],
+        },
+        timestamp=timestamp,
+    )
+    record["flush_state"] = "flushed"
+    record["updated_at"] = timestamp
+    store.upsert(record)
+
+    result = _ok_cache_result(request, [_cache_item(record)])
+    return {**result, "selected_backend": "jsonl_store", "write_mode": "jsonl-local"}
 
 
 def _callback_delivery_instruction(request: dict[str, Any], arguments: dict[str, Any], store: CacheStore) -> dict[str, Any]:

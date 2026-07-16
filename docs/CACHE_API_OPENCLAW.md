@@ -56,6 +56,14 @@ read back to earn `verified`. The cache stores the resulting pointer with
 audit log, or provenance ledger. A failed write-through returns a
 structured error and drops the content — the caller owns retry.
 
+Content behavior, `local` (JSONL write-through, EN-020): zero-dependency —
+the content is appended to the local JSONL store
+(`MEMORYCORE_JSONL_STORE`, default `.memorycore/jsonl-store.jsonl`,
+gitignored), read back for a proof-based `verified` stamp, and the cache
+keeps the `jsonl://` pointer with `flush_state: "flushed"` and
+`write_mode: "jsonl-local"`. Works in every backend mode; verification of
+`jsonl_store` records is real (hash-based) in every mode too.
+
 Content behavior, `transcript` (callback, ADR-0006): the record is cached
 with `flush_state: "awaiting_delivery"` and the response carries a
 `delivery` instruction (`record_id`, `action: "lcm_ingest"`, the content —
