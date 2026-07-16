@@ -10,8 +10,12 @@ MVP boundary.
 
 ## Current Verdict
 
-MemoryCore is a working local control plane with one backend proven live,
-not yet a complete OpenClaw MVP.
+The MemoryCore MVP is COMPLETE as of 2026-07-17. EVAL-012 was approved,
+executed by a live OpenClaw agent in the isolated glasshouse environment,
+recorded, cleaned up, and followed by a green public-safe eval — the last
+gate in this ledger. Scope caveats: live LCM delivery remains contract-only
+(simulated executor; glasshouse OpenClaw lacks lossless-claw), and local
+live-QMD proof is not production QMD readiness.
 
 The implementation proves normalized contracts, routing, verification states,
 provenance/audit behavior, CLI/MCP surfaces, and — beyond the original kernel —
@@ -43,8 +47,8 @@ isolation.
 | LCM callback delivery contract | Complete fixture-first with simulated executor | `docs/adr/0006-lcm-callback-write-transport.md`, `scripts/validate_mvp_callback_delivery.py` | OpenClaw-side executor plugin and describe-verify gated on EVAL-012. |
 | Public repo, CI, product register | Complete | github.com/openreflect/openreflect-local-memorycore-engram, `.github/workflows/ci.yml`, `docs/REGISTER.md` | Keep register and docs reconciled per commit. |
 | Public-safe golden path | Partial | `scripts/validate_e2e_golden_path.py`, EVAL-013 notes in `docs/MVP_EVAL_PLAN.md` | OpenClaw caller leg remains gated on EVAL-012. |
-| OpenClaw integration smoke | Blocked by design | `docs/OPENCLAW_INTEGRATION_SMOKE_PLAN.md`, `docs/evals/EVAL-012_OPENCLAW_SMOKE_RUN_NOTE.md` | Requires explicit hard-stop lift, approval source/timestamp, caller path, backend mode, entrypoint, audit path, cleanup action, and stop-condition reviewer. |
-| Final MVP verdict | Blocked | Assessment reports and this ledger | Requires approved EVAL-012 result plus green public-safe eval route afterward. |
+| OpenClaw integration smoke | Complete (2026-07-17) | `docs/evals/EVAL-012_OPENCLAW_SMOKE_RUN_NOTE.md` | Executed fixture-only by the OpenClaw agent in glasshouse; artifacts cleaned; results corroborated by server audit. |
+| Final MVP verdict | Complete (2026-07-17) | This ledger and the EVAL-012 run note | MVP kernel + control plane + one live backend + OpenClaw smoke all proven; live LCM delivery remains post-MVP. |
 
 ## Not MVP Claims Yet
 

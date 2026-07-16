@@ -130,20 +130,28 @@ TTY) — then `openclaw agent --local` can drive the four fixture-only calls.
 
 ## Calls
 
+Executed 2026-07-17 by the OpenClaw agent (gateway session `main`, model
+openai/gpt-5.5, operator OAuth profile) calling the memorycore MCP stdio
+server registered in glasshouse `mcp.servers`, fixture-only mode.
+
 | Call | Status | Selected backend | Pointer or reason | Verification state | Audit id |
 | --- | --- | --- | --- | --- | --- |
-| `memorycore_health` | pending operator OAuth | n/a | n/a | n/a | n/a |
-| `memorycore_search` | pending operator OAuth | n/a | n/a | n/a | n/a |
-| `memorycore_verify` | pending operator OAuth | n/a | n/a | n/a | n/a |
-| structured failure | pending operator OAuth | n/a | n/a | n/a | n/a |
+| `memorycore_health` | ok | n/a (health) | n/a | n/a | n/a (health is not audited by design) |
+| `memorycore_search` | ok | qmd | fixtures/corpus/project-alpha.md | unknown | audit_11de3620cc061fe5 |
+| `memorycore_verify` | ok | mock_healthy | fixtures/corpus/project-alpha.md | verified | audit_01d0f82f5188dc13 |
+| structured failure (`verify` on qmd) | error | qmd | VERIFICATION_UNSUPPORTED / verification_unsupported | unsupported | audit_23d175d50dfe5c3b |
+
+The agent-reported results and the server-side audit log
+(`/tmp/eval012-audit.jsonl`, 3 records) corroborated exactly; the audit log
+contained zero private result fields (snippet/content/citations/summary/
+answer/text all absent).
 
 ## Artifact Handling
 
-No smoke artifacts exist from this note.
-
-Before any future run, choose whether artifacts are temporary or retained as
-public-safe synthetic evidence. After the run, record the cleanup or isolation
-result here before making any MVP completion claim.
+The temporary audit file `/tmp/eval012-audit.jsonl` in glasshouse was
+inspected (content-sparse confirmed), its metadata recorded in the call table
+above, and then deleted per the approved cleanup action. The glasshouse
+`.memorycore` stores remain as isolated synthetic evidence, never committed.
 
 ## Completion Criteria
 
