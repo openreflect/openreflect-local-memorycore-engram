@@ -10,6 +10,7 @@ fixture-only acknowledgments.
 from __future__ import annotations
 
 import json
+import os
 import sys
 import tempfile
 from pathlib import Path
@@ -28,6 +29,7 @@ def require(condition: bool, message: str) -> None:
 
 
 def main() -> int:
+    saved_store = os.environ.get("MEMORYCORE_JSONL_STORE")
     try:
         tool_names = {tool["name"] for tool in list_tools()}
         require(CACHE_TOOL_NAMES <= tool_names, "Cache tools missing from MCP tool definitions")
@@ -36,6 +38,8 @@ def main() -> int:
             cache_db = Path(tmpdir) / "cache.sqlite3"
             audit_log = Path(tmpdir) / "audit.jsonl"
             kwargs = {"audit_log": audit_log, "cache_db": cache_db}
+            # Isolate content fan-out from any operator jsonl store.
+            os.environ["MEMORYCORE_JSONL_STORE"] = str(Path(tmpdir) / "jsonl-store.jsonl")
 
             # remember: file_corpus record lands pending with a stamped pointer.
             written = call_tool(
@@ -138,6 +142,11 @@ def main() -> int:
     except (KeyError, ValueError) as exc:
         print(f"MEMORYCORE_CACHE_API_INVALID: {exc}", file=sys.stderr)
         return 1
+    finally:
+        if saved_store is None:
+            os.environ.pop("MEMORYCORE_JSONL_STORE", None)
+        else:
+            os.environ["MEMORYCORE_JSONL_STORE"] = saved_store
 
     print("MEMORYCORE_CACHE_API_OK")
     return 0

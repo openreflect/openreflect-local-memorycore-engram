@@ -87,14 +87,42 @@ all required pre-execution fields are filled:
 
 Prep work may continue by editing plans, fixtures, contracts, and run notes.
 
+## Execution Log (glasshouse campaign, 2026-07-17)
+
+Completed:
+
+- OpenClaw 2026.7.1 and qmd 2.5.3 installed in glasshouse (npm, user prefix).
+- `openclaw mcp add memorycore` saved and probed the stdio server
+  successfully (transport-level OpenClaw -> MemoryCore connectivity proven).
+- Gateway configured (`gateway.mode=local`, synthetic auth token) and running
+  as a persistent systemd user service with linger; health ok.
+- Live-local leg (step [d]) PASSED in glasshouse: isolated collection
+  `memorycore-writes` at `~/.memorycore/corpus`; `memorycore_remember`
+  (file_corpus, content) -> `write_mode: live-local`,
+  `qmd://memorycore-writes/memory-78b28919b5db5912.md`, `verified`;
+  `memorycore_verify` by record_id -> `verified`; live `memorycore_search`
+  -> 1 result, `recall_mode: qmd_live_local`.
+
+Discovered:
+
+- `openclaw agent --local` turns require a model auth profile; provider auth
+  is an interactive browser OAuth (operator-only). The fixture smoke call set
+  below therefore waits on that one operator step.
+- `openclaw attach` grants expose OpenClaw's native gateway tools
+  (including `memory_get`/`memory_search`) but not `mcp.servers` entries, so
+  attach is not a substitute caller path for the agent-driven smoke.
+- Gateway start requires `gateway.mode` and `gateway.auth` to be explicitly
+  configured; background processes must run under systemd (transient WSL
+  sessions kill nohup children).
+
 ## Calls
 
 | Call | Status | Selected backend | Pointer or reason | Verification state | Audit id |
 | --- | --- | --- | --- | --- | --- |
-| `memorycore_health` | not run | n/a | n/a | n/a | n/a |
-| `memorycore_search` | not run | n/a | n/a | n/a | n/a |
-| `memorycore_verify` | not run | n/a | n/a | n/a | n/a |
-| structured failure | not run | n/a | n/a | n/a | n/a |
+| `memorycore_health` | pending operator OAuth | n/a | n/a | n/a | n/a |
+| `memorycore_search` | pending operator OAuth | n/a | n/a | n/a | n/a |
+| `memorycore_verify` | pending operator OAuth | n/a | n/a | n/a | n/a |
+| structured failure | pending operator OAuth | n/a | n/a | n/a | n/a |
 
 ## Artifact Handling
 

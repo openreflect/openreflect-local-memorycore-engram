@@ -36,8 +36,8 @@ Stable = UCXM has no − and no ?. Scores are lazy and must carry reasons.
 | GAP-003 | Request ids collide | EN-011 | concept | | docs/MCP_HANDOFF.md | req_mcp_search every call |
 | GAP-004 | No remember idempotency policy | EN-013 | concept | | docs/AGENT_CONTEXT.md | timestamp in id duplicates repeats |
 | GAP-005 | SQLite WAL not enabled | EN-013 | concept | | docs/AGENT_CONTEXT.md | concurrent MCP plus CLI writers |
-| GAP-006 | Content search misses local memories | EN-020 | concept | | docs/CACHING_MEMORY_ROUTER.md | cache_search matches pointers only, jsonl pointers are hash-named; found in glasshouse E2E 2026-07-17; IDEA-015 fan-out answers |
-| GAP-007 | Verify tool description misleads clients | EN-018 | concept | | memorycore/mcp_surface.py | glasshouse Claude assumed record_id verify was mock echo; jsonl verify is real every mode |
+| GAP-006 | Content search misses local memories | EN-020 | superseded | | scripts/validate_mvp_jsonl_backend.py | closed by cache_search jsonl content fan-out with attribution (first EN-021 slice) |
+| GAP-007 | Verify tool description misleads clients | EN-018 | superseded | | memorycore/mcp_surface.py | closed: description now states jsonl record verify is real every mode |
 
 ## Ideas
 

@@ -79,6 +79,18 @@ def main() -> int:
             require(len(found) == 1 and found[0]["content"] == SECRET_CONTENT, "jsonl search should match content")
             require(jsonl_search(store, "note", limit=1)[0]["content"] == "unrelated second note", "limit/order changed")
 
+            # GAP-006: cache_search fans out to jsonl content with attribution.
+            by_content = call_tool("memorycore_cache_search", {"query": "alpha river"}, **kwargs)
+            require(len(by_content["results"]) == 1, "content fan-out should find the local memory")
+            hit = by_content["results"][0]
+            require(hit["match"] == "content", "content hit should be attributed as a content match")
+            require(hit["record_id"] == record_id, "content hit should link back to the cache record")
+            require(SECRET_CONTENT[:50] in hit["snippet"], "content hit should carry a response-only snippet")
+            require(
+                call_tool("memorycore_cache_search", {"query": "alpha river", "memory_type": "transcript"}, **kwargs)["results"] == [],
+                "type filter must suppress content fan-out",
+            )
+
             # Verification: healthy record verifies, in fixture mode, no env flags.
             verified = call_tool("memorycore_verify", {"record_id": record_id}, **kwargs)
             require(verified["verification_state"] == "verified", "healthy jsonl record should verify")

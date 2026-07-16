@@ -28,6 +28,7 @@ from memorycore.jsonl_adapter import (
     jsonl_verify,
     jsonl_write,
     memory_id_from_pointer,
+    store_pointer,
 )
 from memorycore.qmd_adapter import DEFAULT_QMD_BIN, live_local_qmd_verify, live_local_qmd_write
 
@@ -97,7 +98,7 @@ TOOL_DEFINITIONS: tuple[dict[str, Any], ...] = (
     },
     {
         "name": "memorycore_verify",
-        "description": "Verify a pointer (fixture contract) or a cached record against real source state (record_id, live-local mode). Real verdicts update the cached stamp.",
+        "description": "Verify a cached record against real source state by record_id: jsonl_store records get REAL hash-based verification in every mode; qmd records in live-local mode. Real verdicts update the cached stamp. The pointer_id+state form is the fixture contract only and echoes the asserted state.",
         "input_schema": {
             "type": "object",
             "additionalProperties": False,
@@ -282,9 +283,32 @@ def _execute_cache_request(
         if operation == "cache_read":
             return _cache_read_result(request, arguments, store)
         if operation == "cache_search":
-            records = cache_search(store, arguments["query"], memory_type=arguments.get("memory_type"))
-            records = records[: int(arguments.get("limit", 5))]
-            return _ok_cache_result(request, [_cache_item(record) for record in records])
+            limit = int(arguments.get("limit", 5))
+            memory_type = arguments.get("memory_type")
+            records = cache_search(store, arguments["query"], memory_type=memory_type)
+            items = [_cache_item(record) for record in records]
+            # GAP-006 / EN-021 first slice: fan out to jsonl_store content for
+            # local memories, with per-item attribution. Content appears in the
+            # response only; the cache and audit stay content-sparse.
+            if memory_type in (None, "local"):
+                for hit in jsonl_search(_jsonl_store_path(), arguments["query"], limit=limit):
+                    pointer = store_pointer(hit["memory_id"])
+                    if any(item["pointer"].get("pointer_id") == pointer["pointer_id"] for item in items):
+                        continue
+                    record = store.find_by_pointer(pointer["pointer_id"])
+                    item = _cache_item(record) if record else {
+                        "backend_id": pointer["backend_id"],
+                        "pointer": pointer,
+                        "verification_state": "unknown",
+                        "record_id": None,
+                        "memory_type": "local",
+                        "content_ref": pointer["pointer_id"],
+                        "flush_state": "flushed",
+                    }
+                    item["match"] = "content"
+                    item["snippet"] = hit.get("content", "")[:200]
+                    items.append(item)
+            return _ok_cache_result(request, items[:limit])
         if operation == "cache_flush":
             flushed = flush_pending(store, FIXTURE_FLUSH_BACKENDS, timestamp=_timestamp())
             result = _ok_cache_result(request, [_cache_item(record) for record in flushed])
