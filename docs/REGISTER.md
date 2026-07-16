@@ -30,7 +30,9 @@ Stable = UCXM has no − and no ?. Scores are lazy and must carry reasons.
 | EN-021 | Attributed multi-backend recall | EN-013 | concept | | docs/CACHING_MEMORY_ROUTER.md | router becomes synthesizer: fan-out reads, attributed merge; design merge contract before OG-003 envelope freezes |
 | RISK-001 | LCM bridge cannot cross MCP | EN-009 | superseded | | docs/AGENT_CONTEXT.md | resolved by EN-019 callback decision |
 | RISK-002 | Failed write-through drops content | EN-016 | concept | | docs/adr/0005-transient-content-write-through.md | by design; spool fallback if painful |
-| RISK-003 | OpenClaw smoke awaits approval | EN-011 | deferred | | docs/OPENCLAW_INTEGRATION_SMOKE_PLAN.md | EVAL-012 hard stop; operator lifts |
+| RISK-003 | OpenClaw smoke awaits approval | EN-011 | superseded | | docs/evals/EVAL-012_OPENCLAW_SMOKE_RUN_NOTE.md | hard stop lifted 2026-07-17; staged glasshouse execution recorded in run note |
+| RISK-004 | OpenClaw stock memory-core collision | EN-011 | concept | | docs/evals/EVAL-012_OPENCLAW_SMOKE_RUN_NOTE.md | OpenClaw 2026.7.1 ships stock plugin id memory-core; naming/brand overlap with MemoryCore |
+| EN-022 | Delivery executor plugin scaffold | EN-019 | concept | | docs/evals/EVAL-012_OPENCLAW_SMOKE_RUN_NOTE.md | glasshouse-only tool-plugin skeleton (memorycore_deliver); ingest stubbed pending context-engine binding |
 | GAP-001 | Verify echoes caller assertion | EN-005 | superseded | | memorycore/cli.py | closed by EN-018; fixture echo remains contract-only |
 | GAP-002 | No flush retry deadletter | EN-013 | concept | | docs/AGENT_CONTEXT.md | failed records dead-end forever |
 | GAP-003 | Request ids collide | EN-011 | concept | | docs/MCP_HANDOFF.md | req_mcp_search every call |

@@ -115,6 +115,19 @@ Discovered:
   configured; background processes must run under systemd (transient WSL
   sessions kill nohup children).
 
+Executor scaffold (step [e], 2026-07-17): `openclaw plugins init` generated
+`/home/lumen/openclaw-plugins/memorycore-executor/` in glasshouse; `src/index.ts`
+carries the EN-019 design skeleton — a `memorycore_deliver` tool that will
+execute delivery instructions via the native context engine and confirm back
+through `memorycore_confirm_delivery`. Ingest is stubbed (EN-022): glasshouse
+stock OpenClaw 2026.7.1 does not include lossless-claw; its stock plugin set
+does include an unrelated plugin with id `memory-core` (RISK-004 naming
+collision). No enforcement paths were created.
+
+Remaining before the call table can fill: one operator step — interactive
+model-auth OAuth in glasshouse (`openclaw models auth login` for a provider,
+TTY) — then `openclaw agent --local` can drive the four fixture-only calls.
+
 ## Calls
 
 | Call | Status | Selected backend | Pointer or reason | Verification state | Audit id |
