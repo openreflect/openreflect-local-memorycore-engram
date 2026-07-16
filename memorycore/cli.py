@@ -53,6 +53,12 @@ def main(argv: list[str] | None = None) -> int:
                 raise ValueError("only --public-safe eval mode is currently supported")
             result = run_public_safe_eval()
             return _emit(result, args.json, ok=result["status"] == "ok")
+        if args.command == "viewer":
+            from memorycore.viewer import write_viewer
+
+            cache_db = Path(os.environ.get("MEMORYCORE_CACHE_DB", ROOT / ".memorycore" / "cache.sqlite3"))
+            output = write_viewer(cache_db, Path(args.audit_log), Path(args.output))
+            return _emit({"status": "ok", "viewer": str(output)}, args.json)
 
         request = _request_from_args(args)
         result = _execute_request(request)
@@ -105,6 +111,9 @@ def _parser() -> argparse.ArgumentParser:
 
     eval_parser = subparsers.add_parser("eval")
     eval_parser.add_argument("--public-safe", action="store_true", required=True)
+
+    viewer = subparsers.add_parser("viewer")
+    viewer.add_argument("--output", default=str(ROOT / ".memorycore" / "viewer.html"))
 
     return parser
 

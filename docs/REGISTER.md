@@ -34,6 +34,7 @@ Stable = UCXM has no − and no ?. Scores are lazy and must carry reasons.
 | RISK-004 | OpenClaw stock memory-core collision | EN-011 | concept | | docs/evals/EVAL-012_OPENCLAW_SMOKE_RUN_NOTE.md | OpenClaw 2026.7.1 ships stock plugin id memory-core; naming/brand overlap with MemoryCore |
 | EN-022 | Delivery executor plugin scaffold | EN-019 | concept | | docs/evals/EVAL-012_OPENCLAW_SMOKE_RUN_NOTE.md | glasshouse-only tool-plugin skeleton (memorycore_deliver); ingest stubbed pending context-engine binding |
 | EN-023 | EVAL-012 OpenClaw smoke passed | EN-011 | built | | docs/evals/EVAL-012_OPENCLAW_SMOKE_RUN_NOTE.md | live OpenClaw agent drove 4-call fixture set 2026-07-17; audits corroborated; MVP verdict complete |
+| EN-024 | Local provenance viewer | IDEA-008 | built | | memorycore/viewer.py | memory receipts dashboard: verification badges, backend attribution, per-record receipt drilldown, audit trail; content-sparse; `memorycore viewer` |
 | GAP-001 | Verify echoes caller assertion | EN-005 | superseded | | memorycore/cli.py | closed by EN-018; fixture echo remains contract-only |
 | GAP-002 | No flush retry deadletter | EN-013 | concept | | docs/AGENT_CONTEXT.md | failed records dead-end forever |
 | GAP-003 | Request ids collide | EN-011 | concept | | docs/MCP_HANDOFF.md | req_mcp_search every call |
