@@ -98,6 +98,23 @@ not private content.
   records only.
 - Cross-backend identity mapping beyond the pointer fields above.
 
+## Direction: attributed multi-backend recall (EN-021)
+
+Adopted direction 2026-07-16: MemoryCore evolves from a switch (pick one
+backend per intent) toward a synthesizer — consult multiple memory
+technologies simultaneously and merge results with per-item attribution.
+
+- Fan-out reads: one recall query dispatched to all capable backends.
+- Attributed merge: the assembled bundle preserves each item's backend,
+  pointer, verification state, and relevance — never anonymous soup.
+- Cross-backend identity: mirrored records are recognized as one memory.
+- Attribution is the product surface: every assembled context answers
+  "who contributed what, and how trustworthy is each piece."
+
+The merge contract should be designed before the governance evidence
+envelope (OG-003 in the composition register) freezes, so the envelope
+carries multi-source attribution from day one.
+
 ## Open questions
 
 - Write-through vs write-back default per memory type.

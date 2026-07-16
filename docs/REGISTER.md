@@ -27,6 +27,7 @@ Stable = UCXM has no − and no ?. Scores are lazy and must carry reasons.
 | EN-018 | Real backend-proof verification | GAP-001 | built | +00+ | scripts/validate_mvp_real_verify.py | U: core freshness promise; M: deterministic CLI read-back; proven on real index 2026-07-05 |
 | EN-019 | LCM callback write transport | RISK-001 | built | +000 | scripts/validate_mvp_callback_delivery.py | U: unlocks transcript writes; delivery instruction + confirm tool, simulated executor validated |
 | EN-020 | JSONL local file backend | EN-013 | concept | | docs/CACHING_MEMORY_ROUTER.md | zero-dependency default backend; append-only, git-trackable, git-native provenance candidate; third backend proves abstraction |
+| EN-021 | Attributed multi-backend recall | EN-013 | concept | | docs/CACHING_MEMORY_ROUTER.md | router becomes synthesizer: fan-out reads, attributed merge; design merge contract before OG-003 envelope freezes |
 | RISK-001 | LCM bridge cannot cross MCP | EN-009 | superseded | | docs/AGENT_CONTEXT.md | resolved by EN-019 callback decision |
 | RISK-002 | Failed write-through drops content | EN-016 | concept | | docs/adr/0005-transient-content-write-through.md | by design; spool fallback if painful |
 | RISK-003 | OpenClaw smoke awaits approval | EN-011 | deferred | | docs/OPENCLAW_INTEGRATION_SMOKE_PLAN.md | EVAL-012 hard stop; operator lifts |
@@ -54,3 +55,6 @@ Stable = UCXM has no − and no ?. Scores are lazy and must carry reasons.
 | IDEA-012 | Cost token diagnostics | EN-012 | idea | | | per-backend contribution views |
 | IDEA-013 | Register IDs as provenance anchors | EN-006 | idea | | | memory records cite EN rows |
 | IDEA-014 | Indexing transcript reasoning engines | — | idea | | | separate product layer per spec |
+| IDEA-015 | Fan-out parallel recall | EN-021 | idea | | | one query, all capable backends |
+| IDEA-016 | Attributed merge contract | EN-021 | idea | | | per-item backend, pointer, verification, relevance |
+| IDEA-017 | Cross-backend identity mapping | EN-021 | idea | | | mirrored records recognized as one memory |
