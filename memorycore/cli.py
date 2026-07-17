@@ -165,10 +165,20 @@ def _operation(command: str) -> str:
     return command
 
 
+def operator_config_path() -> Path:
+    override = os.environ.get("MEMORYCORE_CONFIG")
+    return Path(override).expanduser() if override else ROOT / ".memorycore" / "config.json"
+
+
 def resolve_backend_mode() -> str:
-    mode = os.environ.get("MEMORYCORE_BACKEND_MODE", "fixture")
+    """Precedence: explicit env var > operator config file > fixture default."""
+    mode = os.environ.get("MEMORYCORE_BACKEND_MODE")
+    if mode is None:
+        from memorycore.operator_config import load_config
+
+        mode = load_config(operator_config_path()).get("mode", "fixture")
     if mode not in BACKEND_MODES:
-        raise ValueError(f"unsupported MEMORYCORE_BACKEND_MODE: {mode}")
+        raise ValueError(f"unsupported backend mode: {mode}")
     return mode
 
 

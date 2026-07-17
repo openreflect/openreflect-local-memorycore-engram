@@ -75,6 +75,17 @@ python3 -m memorycore.cli eval --public-safe
   disclosure until real gated write adapters exist.
 - Cache tools accept `client: "openclaw"` so OpenClaw calls are attributed
   in audit records.
+- Operator config (EN-026): `.memorycore/config.json` (override
+  `MEMORYCORE_CONFIG`) declares backends `{enabled, class, display_name}`
+  and the routing matrix; mode precedence is env `MEMORYCORE_BACKEND_MODE`
+  > config file > fixture default. Backends are config entries, not code
+  constants — reserved classes `peer_reasoning` / `knowledge_brain` /
+  `provenance_fabric` are where future systems land; a declared backend
+  with no installed adapter renders as future and fails flushes honestly.
+  All control actions (toggle, routing, mode, flush, verify-all, forget)
+  write `client_surface: "operator_ui"` audit receipts. The live viewer
+  (`memorycore viewer --serve`) exposes these controls loopback-only,
+  gated by the `X-MemoryCore-Control` header.
 
 ## Current Build Frontier
 

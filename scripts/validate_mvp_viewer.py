@@ -43,6 +43,7 @@ def main() -> int:
                 if key.startswith("MEMORYCORE_"):
                     del os.environ[key]
             os.environ["MEMORYCORE_JSONL_STORE"] = str(tmp / "jsonl-store.jsonl")
+            os.environ["MEMORYCORE_CONFIG"] = str(tmp / "config.json")
 
             # Seed: one local content memory (verified), one pointer memory.
             written = call_tool("memorycore_remember", {"memory_type": "local", "content": SECRET_CONTENT}, **kwargs)

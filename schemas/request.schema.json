@@ -10,7 +10,7 @@
     },
     "client_surface": {
       "type": "string",
-      "enum": ["cli", "mcp", "openclaw", "test"]
+      "enum": ["cli", "mcp", "openclaw", "operator_ui", "test"]
     },
     "operation": {
       "type": "string",

@@ -109,6 +109,11 @@ class CacheStore:
         rows = self._conn.execute(sql, params).fetchall()
         return [_row_to_record(row) for row in rows]
 
+    def delete(self, record_id: str) -> bool:
+        cursor = self._conn.execute("DELETE FROM cache_records WHERE record_id = ?", (record_id,))
+        self._conn.commit()
+        return cursor.rowcount > 0
+
     def upsert(self, record: dict[str, Any]) -> None:
         self._conn.execute(
             "INSERT OR REPLACE INTO cache_records"

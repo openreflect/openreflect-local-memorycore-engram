@@ -48,6 +48,7 @@ def main() -> int:
                 if key.startswith("MEMORYCORE_"):
                     del os.environ[key]
             os.environ["MEMORYCORE_JSONL_STORE"] = str(store)
+            os.environ["MEMORYCORE_CONFIG"] = str(tmp / "config.json")
 
             # Write-through works with zero external dependencies, any mode.
             written = call_tool(

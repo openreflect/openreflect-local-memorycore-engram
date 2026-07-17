@@ -36,6 +36,7 @@ Stable = UCXM has no − and no ?. Scores are lazy and must carry reasons.
 | EN-023 | EVAL-012 OpenClaw smoke passed | EN-011 | built | | docs/evals/EVAL-012_OPENCLAW_SMOKE_RUN_NOTE.md | live OpenClaw agent drove 4-call fixture set 2026-07-17; audits corroborated; MVP verdict complete |
 | EN-024 | Local provenance viewer | IDEA-008 | built | | memorycore/viewer.py | memory receipts dashboard: verification badges, backend attribution, per-record receipt drilldown, audit trail; content-sparse; `memorycore viewer` |
 | EN-025 | Alice customer-zero adoption | EN-023 | concept | | docs/REGISTER.md | step 1 (2026-07-17): memorycore attached as MCP server to the working Claude Code session; OpenClaw config untouched; observe real usage before deeper integration |
+| EN-026 | Operator console audited controls | EN-024 | built | | scripts/validate_mvp_operator_console.py | backend on/off, routing matrix (mirroring via multi-check), mode switch, flush/verify-all/forget; config entries not code constants; reserved classes for future systems; declared-no-adapter degrades honestly; every action audited as operator_ui |
 | GAP-001 | Verify echoes caller assertion | EN-005 | superseded | | memorycore/cli.py | closed by EN-018; fixture echo remains contract-only |
 | GAP-002 | No flush retry deadletter | EN-013 | concept | | docs/AGENT_CONTEXT.md | failed records dead-end forever |
 | GAP-003 | Request ids collide | EN-011 | concept | | docs/MCP_HANDOFF.md | req_mcp_search every call |

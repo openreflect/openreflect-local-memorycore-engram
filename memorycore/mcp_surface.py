@@ -22,7 +22,8 @@ from memorycore.cache_router import (
     cache_write,
     flush_pending,
 )
-from memorycore.cli import DEFAULT_AUDIT_LOG, ROOT, _execute_request, resolve_backend_mode
+from memorycore.cli import DEFAULT_AUDIT_LOG, ROOT, _execute_request, operator_config_path, resolve_backend_mode
+from memorycore.operator_config import backend_enabled, effective_routing, load_config
 from memorycore.jsonl_adapter import (
     jsonl_search,
     jsonl_verify,
@@ -49,8 +50,25 @@ DEFAULT_CACHE_DB = ROOT / ".memorycore" / "cache.sqlite3"
 FIXTURE_FLUSH_BACKENDS = {
     "qmd": lambda record: {"status": "ok"},
     "lossless_claw": lambda record: {"status": "ok"},
+    "jsonl_store": lambda record: {"status": "ok"},
     "mock_healthy": lambda record: {"status": "ok"},
 }
+
+
+def _operator_disabled_error(request: dict[str, Any], backend_id: str) -> dict[str, Any]:
+    return {
+        "request_id": request["request_id"],
+        "operation": request["operation"],
+        "status": "error",
+        "results": [],
+        "verification_state": "unknown",
+        "error": {
+            "code": "BACKEND_DISABLED",
+            "category": "backend_unavailable",
+            "message": f"Backend {backend_id} is disabled by operator configuration.",
+            "details": {"backend_id": backend_id},
+        },
+    }
 
 CACHE_TOOL_NAMES = frozenset(
     {
@@ -310,7 +328,8 @@ def _execute_cache_request(
                     items.append(item)
             return _ok_cache_result(request, items[:limit])
         if operation == "cache_flush":
-            flushed = flush_pending(store, FIXTURE_FLUSH_BACKENDS, timestamp=_timestamp())
+            routing = effective_routing(load_config(operator_config_path()))
+            flushed = flush_pending(store, FIXTURE_FLUSH_BACKENDS, timestamp=_timestamp(), routing=routing)
             result = _ok_cache_result(request, [_cache_item(record) for record in flushed])
             return {**result, "flush_mode": "fixture-only"}
         if operation == "cache_confirm":
@@ -326,7 +345,15 @@ def _cache_write_result(request: dict[str, Any], arguments: dict[str, Any], stor
 
     memory_type = arguments["memory_type"]
     content_ref = arguments["content_ref"]
-    backend_id = DEFAULT_ROUTING[memory_type][0]
+    config = load_config(operator_config_path())
+    routing = effective_routing(config)
+    targets = routing.get(memory_type, ())
+    if not targets:
+        declared = DEFAULT_ROUTING.get(memory_type, config.get("routing", {}).get(memory_type, ()))
+        if declared:
+            return _operator_disabled_error(request, declared[0])
+        raise ValueError(f"unroutable memory_type: {memory_type!r}")
+    backend_id = targets[0]
     pointer: dict[str, Any] = {"backend_id": backend_id}
     if memory_type == "transcript":
         pointer["summary_id"] = arguments.get("summary_id") or content_ref
@@ -341,6 +368,7 @@ def _cache_write_result(request: dict[str, Any], arguments: dict[str, Any], stor
             "verification": arguments.get("verification", "unknown"),
         },
         timestamp=_timestamp(),
+        routing=routing,
     )
     result = _ok_cache_result(request, [_cache_item(record)])
     return {**result, "selected_backend": backend_id}
@@ -443,11 +471,18 @@ def _content_write_through(request: dict[str, Any], arguments: dict[str, Any], s
     for the executor (OpenClaw) to ingest natively and confirm back.
     """
     memory_type = arguments["memory_type"]
+    config = load_config(operator_config_path())
     if memory_type == "local":
+        if not backend_enabled(config, "jsonl_store"):
+            return _operator_disabled_error(request, "jsonl_store")
         return _jsonl_write_through(request, arguments, store)
     if memory_type != "file_corpus":
+        if not backend_enabled(config, "lossless_claw"):
+            return _operator_disabled_error(request, "lossless_claw")
         return _callback_delivery_instruction(request, arguments, store)
 
+    if not backend_enabled(config, "qmd"):
+        return _operator_disabled_error(request, "qmd")
     content = arguments["content"]
     timestamp = _timestamp()
     memory_id = "memory-" + hashlib.sha256(f"{content}{timestamp}".encode()).hexdigest()[:16]

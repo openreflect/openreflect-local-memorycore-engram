@@ -40,6 +40,7 @@ def main() -> int:
             kwargs = {"audit_log": audit_log, "cache_db": cache_db}
             # Isolate content fan-out from any operator jsonl store.
             os.environ["MEMORYCORE_JSONL_STORE"] = str(Path(tmpdir) / "jsonl-store.jsonl")
+            os.environ.setdefault("MEMORYCORE_CONFIG", str(Path(tmpdir) / "config.json"))
 
             # remember: file_corpus record lands pending with a stamped pointer.
             written = call_tool(
