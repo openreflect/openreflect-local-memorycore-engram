@@ -664,6 +664,8 @@ function showTip(e, html) { tip.innerHTML = html; tip.style.opacity = 1;
 function hideTip() { tip.style.opacity = 0; }
 
 let records = [];
+let openRecordId = null;
+const revealCache = {};
 function renderAll() {
 document.getElementById("gen").textContent = "Generated " + DATA.generated_at + (LIVE ? " · live" : " · snapshot");
 document.getElementById("foot").textContent =
@@ -773,6 +775,8 @@ document.getElementById("audit").innerHTML = DATA.audit.length === 0 ?
 
 renderControl();
 renderTrends();
+document.querySelectorAll("tr.detail").forEach(d => d.remove());
+restoreOpenDetail();
 bindHelp();
 }
 
@@ -949,13 +953,7 @@ async function poll() {
 }
 poll(); setInterval(poll, 4000);
 
-const tbody2 = document.querySelector("#memtable tbody");
-tbody2.addEventListener("click", e => {
-  const row = e.target.closest("tr.mem"); if (!row) return;
-  const open = row.nextElementSibling?.classList.contains("detail");
-  document.querySelectorAll("tr.detail").forEach(d => d.remove());
-  if (open) return;
-  const r = records[+row.dataset.i];
+function buildDetailRow(r) {
   const related = DATA.audit.filter(a => (a.pointer_ids || []).some(p =>
     p === r.content_ref || p === r.source_pointer.pointer_id));
   const d = document.createElement("tr");
@@ -978,7 +976,26 @@ state    ${esc(r.verification)} / ${esc(r.flush_state)}</pre></div>
       </div>
       <div class="revealpane"></div></div>
   </div></td>`;
-  row.after(d);
+  if (revealCache[r.record_id]) d.querySelector(".revealpane").innerHTML = revealCache[r.record_id];
+  return d;
+}
+
+function restoreOpenDetail() {
+  if (!openRecordId) return;
+  const idx = records.findIndex(r => r.record_id === openRecordId);
+  const row = document.querySelector(`#memtable tr.mem[data-i="${idx}"]`);
+  if (idx < 0 || !row) { openRecordId = null; return; }
+  row.after(buildDetailRow(records[idx]));
+}
+
+const tbody2 = document.querySelector("#memtable tbody");
+tbody2.addEventListener("click", e => {
+  const row = e.target.closest("tr.mem"); if (!row) return;
+  const r = records[+row.dataset.i];
+  const closing = openRecordId === r.record_id;
+  document.querySelectorAll("tr.detail").forEach(d => d.remove());
+  openRecordId = closing ? null : r.record_id;
+  if (!closing) row.after(buildDetailRow(r));
 });
 
 async function controlRaw(action, payload) {
@@ -1008,6 +1025,7 @@ async function reveal(recordId, btn) {
         ${out.note ? `<span style="color:var(--muted)">${esc(out.note)}</span>` : ""}</div>
       <pre class="content">${esc(out.content)}</pre>
       <div style="font-size:11.5px;color:var(--muted);margin-top:4px">read receipted as content_access — content shown live, never stored in this page</div>`;
+    revealCache[recordId] = pane.innerHTML;
     toast("content revealed — read receipted", true);
     poll();
   } catch (e) { pane.innerHTML = ""; toast("reveal failed: " + e, false); }
