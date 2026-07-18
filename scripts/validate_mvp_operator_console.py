@@ -160,12 +160,35 @@ def main() -> int:
             require(reveal_id in out["human_readable"], "pack should name the record")
             require(secret not in json.dumps(out["pack"]), "pack must stay content-sparse")
 
+            # GAP-010: content search maps memory content to cache records.
+            from memorycore.viewer import content_search_matches
+            matches = content_search_matches(cache_db, "console demonstrated")
+            require(len(matches) == 1 and matches[0]["record_id"] == reveal_id,
+                    "content search should link content to the cache record")
+            require("receipt" in matches[0]["snippet"], "content match should carry a snippet")
+            require(content_search_matches(cache_db, "xy") == [], "short queries should return nothing")
+
+            # GAP-009: reset_config is the escape hatch from half-applied state.
+            # Current state is deliberately dirty: routing local -> honcho,
+            # declared backends honcho + gbrain, from the tests above.
+            out = handle_control("reset_config", {}, **ctl)
+            require(out["status"] == "ok", "reset_config failed")
+            reset_cfg = load_config(config_path)
+            require(reset_cfg["routing"]["local"] == ["jsonl_store"], "reset should restore default routing")
+            require(reset_cfg["mode"] == "fixture", "reset should restore fixture mode")
+            require(all(reset_cfg["backends"][b]["enabled"] for b in ("jsonl_store", "qmd", "lossless_claw")),
+                    "reset should enable installed backends")
+            require("honcho" in reset_cfg["backends"] and reset_cfg["backends"]["honcho"]["enabled"] is False,
+                    "reset must preserve declared backends, disabled")
+            require("gbrain" in reset_cfg["backends"] and reset_cfg["backends"]["gbrain"]["enabled"] is False,
+                    "reset must preserve gbrain declared, disabled")
+
             # Every control action left a content-sparse receipt.
             records = [json.loads(line) for line in audit_log.read_text(encoding="utf-8").splitlines()]
             ui_records = [r for r in records if r["client_surface"] == "operator_ui"]
             actions = {r.get("config_change", {}).get("action") for r in ui_records}
             require({"backend_toggle", "routing_change", "mode_change", "verify_all", "forget",
-                     "reveal", "declare_backend", "pack_export"} <= actions,
+                     "reveal", "declare_backend", "pack_export", "config_reset"} <= actions,
                     f"missing control receipts: {actions}")
             for record in records:
                 assert_public_safe(record)

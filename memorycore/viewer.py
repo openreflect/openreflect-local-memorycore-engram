@@ -347,7 +347,57 @@ def handle_control(
         append_record(audit_log, audit)
         return {"status": "ok", "pack": body, "integrity": integrity, "human_readable": "\n".join(lines)}
 
+    if action == "reset_config":
+        from memorycore.operator_config import DEFAULT_CONFIG, INSTALLED_ADAPTERS
+
+        preserved: list[str] = []
+
+        def mutate(cfg: dict[str, Any]) -> None:
+            for backend_id, entry in cfg["backends"].items():
+                entry["enabled"] = backend_id in INSTALLED_ADAPTERS
+                if backend_id not in INSTALLED_ADAPTERS:
+                    preserved.append(backend_id)
+            cfg["routing"] = {k: list(v) for k, v in DEFAULT_CONFIG["routing"].items()}
+            cfg["mode"] = DEFAULT_CONFIG["mode"]
+
+        apply_config_change(
+            config_path, audit_log, action="config_reset",
+            detail={"preserved_declared": preserved}, mutate=mutate,
+        )
+        note = f"; declared future backends preserved disabled: {', '.join(preserved)}" if preserved else ""
+        return {"status": "ok", "message": f"config reset to defaults (mode fixture, installed backends enabled, default routing){note}"}
+
     return {"status": "error", "message": f"unknown control action: {action}"}
+
+
+def content_search_matches(cache_db: Path, query: str, *, limit: int = 20) -> list[dict[str, Any]]:
+    """GAP-010: content matches for the table search, live server only.
+
+    Snippets are response-only (never persisted); pointers link matches back
+    to cache records so the table can merge them with attribution.
+    """
+    from memorycore.cache_router import CacheStore
+    from memorycore.jsonl_adapter import jsonl_search, store_pointer
+    from memorycore.mcp_surface import _jsonl_store_path
+
+    if not query or len(query) < 3:
+        return []
+    matches = []
+    store = CacheStore(cache_db)
+    try:
+        for hit in jsonl_search(_jsonl_store_path(), query, limit=limit):
+            pointer = store_pointer(hit["memory_id"])
+            record = store.find_by_pointer(pointer["pointer_id"])
+            matches.append(
+                {
+                    "record_id": record["record_id"] if record else None,
+                    "pointer_id": pointer["pointer_id"],
+                    "snippet": hit.get("content", "")[:160],
+                }
+            )
+    finally:
+        store.close()
+    return matches
 
 
 def render_html(data: dict[str, Any]) -> str:
@@ -380,8 +430,18 @@ def serve_viewer(cache_db: Path, audit_log: Path, *, port: int = 8787, host: str
 
     class Handler(http.server.BaseHTTPRequestHandler):
         def do_GET(self) -> None:  # noqa: N802 - http.server API
-            if self.path.split("?")[0] == "/data.json":
+            route = self.path.split("?")[0]
+            if route == "/data.json":
                 body = _json.dumps(collect_viewer_data(cache_db, audit_log)).encode("utf-8")
+                ctype = "application/json"
+            elif route == "/content-search.json":
+                if self.headers.get("X-MemoryCore-Control") != "1":
+                    self._respond(403, b'{"error":"forbidden"}', "application/json")
+                    return
+                from urllib.parse import parse_qs, urlparse
+
+                query = parse_qs(urlparse(self.path).query).get("q", [""])[0]
+                body = _json.dumps({"matches": content_search_matches(cache_db, query)}).encode("utf-8")
                 ctype = "application/json"
             else:
                 body = render_html(collect_viewer_data(cache_db, audit_log)).encode("utf-8")
@@ -598,6 +658,7 @@ _TEMPLATE = r"""<!doctype html>
   <div class="ctl-actions" style="margin-top:14px">
     <button class="btn" id="btn-flush">Flush pending</button>
     <button class="btn" id="btn-verify">Re-verify all stamps</button>
+    <button class="btn" id="btn-reset" data-help="Escape hatch for half-applied changes: restores mode, backend enablement, and routing to installed defaults. Declared future backends are preserved (disabled). Audited like every control.">Reset to defaults</button>
   </div>
   <div class="declare" id="declare"></div>
   <h2 style="margin-top:18px" data-help="The settings' own audit trail: every toggle, routing edit, mode switch, reveal, and export, attributed and timestamped.">Configuration history <span style="color:var(--muted);font-weight:400">— who changed what, when</span></h2>
@@ -623,7 +684,7 @@ _TEMPLATE = r"""<!doctype html>
 <section>
   <h2 data-help="Every memory the cache knows: its pointer, hash, verification stamp, and delivery state. Click a row for the full receipt.">Memory records <span style="color:var(--muted);font-weight:400">— click a row for its receipt</span></h2>
   <div class="filters">
-    <input type="text" id="mf-text" placeholder="search records…" oninput="renderAll()">
+    <input type="text" id="mf-text" placeholder="search ids, pointers — and content when live…" oninput="memSearchInput()">
     <select id="mf-state" onchange="renderAll()"></select>
     <select id="mf-backend" onchange="renderAll()"></select>
     <select id="mf-type" onchange="renderAll()"></select>
@@ -731,17 +792,24 @@ const visible = records.map((r, i) => [r, i]).filter(([r]) => {
   if (mfState && r.verification !== mfState) return false;
   if (mfBackend && b !== mfBackend) return false;
   if (mfType && r.memory_type !== mfType) return false;
-  if (mfText && !(r.record_id + " " + r.content_ref + " " + r.memory_type).toLowerCase().includes(mfText)) return false;
+  if (mfText) {
+    const idMatch = (r.record_id + " " + r.content_ref + " " + r.memory_type).toLowerCase().includes(mfText);
+    if (!idMatch && !contentMatches[r.record_id]) return false;
+  }
   return true;
 });
 document.getElementById("mf-count").textContent = `${visible.length} of ${records.length}`;
+const emptyMsg = !mfText ? "no records match the filters" :
+  LIVE ? "no matches across ids, pointers, or memory content" :
+  "no id/pointer matches — content search requires the live console";
 const tbody = document.querySelector("#memtable tbody");
 tbody.innerHTML = records.length === 0 ? '<tr><td colspan="7" class="empty">cache is empty</td></tr>' :
-  visible.length === 0 ? '<tr><td colspan="7" class="empty">no records match the filters</td></tr>' :
+  visible.length === 0 ? `<tr><td colspan="7" class="empty">${emptyMsg}</td></tr>` :
   visible.map(([r, i]) => {
     const b = r.source_pointer.backend_id || "unrouted";
-    return `<tr class="mem" data-i="${i}">
-      <td class="mono">${esc(r.record_id.slice(0, 18))}…</td>
+    const cm = contentMatches[r.record_id];
+    return `<tr class="mem" data-i="${i}"${cm ? ` title="content match: ${esc(cm)}"` : ""}>
+      <td class="mono">${esc(r.record_id.slice(0, 18))}…${cm ? ' <span class="badge" style="font-size:10px;padding:1px 7px">content</span>' : ""}</td>
       <td>${esc(r.memory_type)}</td>
       <td><span class="dot" style="background:${backendColor(b)}"></span> ${esc(b)}</td>
       <td><span class="ptr mono" title="${esc(r.content_ref)}">${esc(r.content_ref)}</span></td>
@@ -934,12 +1002,14 @@ function routeChange(t) {
 function toast(msg, ok) {
   const el = document.getElementById("toast");
   el.textContent = msg;
-  el.style.borderColor = ok ? "var(--good)" : "var(--critical)";
+  el.style.borderColor = ok === true ? "var(--good)" : ok === false ? "var(--critical)" : "var(--muted)";
   el.style.opacity = 1;
-  clearTimeout(el._t); el._t = setTimeout(() => { el.style.opacity = 0; }, 3500);
+  clearTimeout(el._t);
+  if (ok !== null) el._t = setTimeout(() => { el.style.opacity = 0; }, 3500);
 }
 
 async function control(action, payload) {
+  toast(action.replace(/_/g, " ") + "…", null);
   try {
     const res = await fetch("control", {
       method: "POST",
@@ -1044,6 +1114,7 @@ async function reveal(recordId, btn) {
 }
 
 async function exportPack(recordId) {
+  toast("exporting evidence pack…", null);
   try {
     const out = await controlRaw("pack", { record_id: recordId });
     if (out.status !== "ok") { toast(out.message, false); return; }
@@ -1071,6 +1142,29 @@ async function declareBackend() {
 
 document.getElementById("btn-flush").onclick = () => control("flush", {});
 document.getElementById("btn-verify").onclick = () => control("verify_all", {});
+document.getElementById("btn-reset").onclick = () => {
+  if (confirm("Reset mode, backend enablement, and routing to installed defaults? Declared future backends are preserved (disabled). This action is audited."))
+    control("reset_config", {});
+};
+
+let contentMatches = {};
+let contentTimer = null;
+function memSearchInput() {
+  renderAll();
+  clearTimeout(contentTimer);
+  const q = document.getElementById("mf-text").value.trim();
+  if (!LIVE || q.length < 3) { if (Object.keys(contentMatches).length) { contentMatches = {}; renderAll(); } return; }
+  contentTimer = setTimeout(async () => {
+    try {
+      const res = await fetch("content-search.json?q=" + encodeURIComponent(q),
+        { headers: { "X-MemoryCore-Control": "1" }, cache: "no-store" });
+      const out = await res.json();
+      contentMatches = {};
+      (out.matches || []).forEach(m => { if (m.record_id) contentMatches[m.record_id] = m.snippet; });
+      renderAll();
+    } catch (e) { /* static snapshot: content search unavailable */ }
+  }, 250);
+}
 
 function toggleTheme() {
   const root = document.documentElement;
