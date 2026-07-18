@@ -64,6 +64,13 @@ INSTALLED_ADAPTERS: dict[str, dict[str, Any]] = {
         "description": "OpenClaw's conversation-continuity engine: append-only transcript memory with summary DAGs. Writes travel by callback delivery (ADR-0006); existence is proven via describe.",
         "url": f"{_REPO_DOCS}/adr/0006-lcm-callback-write-transport.md",
     },
+    "gbrain": {
+        "class": "knowledge_brain",
+        "display_name": "gbrain",
+        "capabilities": {"read": True, "write_through": "capture", "verify": "pending", "content_search": False},
+        "description": "Garry's opinionated agent knowledge brain: page-level memory with schema packs, timelines, and ingest logs. Writes go through the sanctioned gbrain capture entrance, which reports slug, status, and content hash.",
+        "url": "https://github.com/garrytan/gbrain",
+    },
 }
 
 CLASS_INFO: dict[str, str] = {
@@ -79,6 +86,7 @@ MEMORY_TYPE_INFO: dict[str, str] = {
     "local": "Quick durable notes: routed to the JSONL store, verified by content hash in every mode.",
     "file_corpus": "Document-shaped memories: materialized as markdown files and semantically indexed by QMD.",
     "transcript": "Conversation moments: delivered into Lossless-Claw via the ADR-0006 callback transport.",
+    "knowledge": "Curated knowledge: pages captured into gbrain through its sanctioned capture entrance, with slug and hash receipts.",
 }
 
 DEFAULT_CONFIG: dict[str, Any] = {
@@ -92,6 +100,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "local": ["jsonl_store"],
         "file_corpus": ["qmd"],
         "transcript": ["lossless_claw"],
+        "knowledge": ["gbrain"],
     },
 }
 

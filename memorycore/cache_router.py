@@ -26,6 +26,7 @@ DEFAULT_ROUTING: dict[str, tuple[str, ...]] = {
     "file_corpus": ("qmd",),
     "transcript": ("lossless_claw",),
     "local": ("jsonl_store",),
+    "knowledge": ("gbrain",),
 }
 
 FLUSH_STATES = frozenset({"pending", "awaiting_delivery", "flushed", "failed", "mirrored"})

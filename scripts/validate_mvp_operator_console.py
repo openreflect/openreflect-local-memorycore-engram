@@ -144,16 +144,16 @@ def main() -> int:
             out = handle_control("reveal", {"record_id": reveal_id}, **ctl)
             require(out["hash_match"] is False, "tampered reveal must expose the mismatch")
 
-            require(handle_control("declare", {"backend_id": "gbrain", "display_name": "gbrain", "class": "knowledge_brain"}, **ctl)["status"] == "ok",
+            require(handle_control("declare", {"backend_id": "notion_probe", "display_name": "Notion Probe", "class": "provenance_fabric"}, **ctl)["status"] == "ok",
                     "declare should accept a reserved-class backend")
-            require(handle_control("declare", {"backend_id": "gbrain", "class": "knowledge_brain"}, **ctl)["status"] == "error",
+            require(handle_control("declare", {"backend_id": "notion_probe", "class": "provenance_fabric"}, **ctl)["status"] == "error",
                     "duplicate declare should be rejected")
             require(handle_control("declare", {"backend_id": "bad", "class": "made_up"}, **ctl)["status"] == "error",
                     "unknown class should be rejected")
             require(handle_control("declare", {"backend_id": "Bad-Slug!", "class": "knowledge_brain"}, **ctl)["status"] == "error",
                     "invalid slug should be rejected")
             declared_now = {b["backend_id"]: b for b in describe_backends(load_config(config_path))}
-            require(declared_now["gbrain"]["enabled"] is False, "declared backends must start disabled")
+            require(declared_now["notion_probe"]["enabled"] is False, "declared backends must start disabled")
 
             out = handle_control("pack", {"record_id": reveal_id}, **ctl)
             require(out["status"] == "ok" and out["integrity"], "pack export should succeed with integrity hash")
@@ -176,12 +176,12 @@ def main() -> int:
             reset_cfg = load_config(config_path)
             require(reset_cfg["routing"]["local"] == ["jsonl_store"], "reset should restore default routing")
             require(reset_cfg["mode"] == "fixture", "reset should restore fixture mode")
-            require(all(reset_cfg["backends"][b]["enabled"] for b in ("jsonl_store", "qmd", "lossless_claw")),
+            require(all(reset_cfg["backends"][b]["enabled"] for b in ("jsonl_store", "qmd", "lossless_claw", "gbrain")),
                     "reset should enable installed backends")
             require("honcho" in reset_cfg["backends"] and reset_cfg["backends"]["honcho"]["enabled"] is False,
                     "reset must preserve declared backends, disabled")
-            require("gbrain" in reset_cfg["backends"] and reset_cfg["backends"]["gbrain"]["enabled"] is False,
-                    "reset must preserve gbrain declared, disabled")
+            require("notion_probe" in reset_cfg["backends"] and reset_cfg["backends"]["notion_probe"]["enabled"] is False,
+                    "reset must preserve notion_probe declared, disabled")
 
             # Every control action left a content-sparse receipt.
             records = [json.loads(line) for line in audit_log.read_text(encoding="utf-8").splitlines()]

@@ -63,7 +63,7 @@ EXPECTED_TOOLS: dict[str, dict[str, Any]] = {
     "memorycore_remember": {
         "required": ["memory_type"],
         "properties": {
-            "memory_type": {"type": "string", "enum": ["file_corpus", "transcript", "local"]},
+            "memory_type": {"type": "string", "enum": ["file_corpus", "transcript", "local", "knowledge"]},
             "content_ref": {"type": "string", "minLength": 1},
             "content": {"type": "string", "minLength": 1},
             "pointer_id": {"type": "string", "minLength": 1},
@@ -88,7 +88,7 @@ EXPECTED_TOOLS: dict[str, dict[str, Any]] = {
         "required": ["query"],
         "properties": {
             "query": {"type": "string", "minLength": 1},
-            "memory_type": {"type": "string", "enum": ["file_corpus", "transcript", "local"]},
+            "memory_type": {"type": "string", "enum": ["file_corpus", "transcript", "local", "knowledge"]},
             "limit": {"type": "integer", "minimum": 1, "maximum": 50, "default": 5},
             "client": {"type": "string", "enum": ["mcp", "openclaw"], "default": "mcp"},
         },

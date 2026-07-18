@@ -51,6 +51,7 @@ FIXTURE_FLUSH_BACKENDS = {
     "qmd": lambda record: {"status": "ok"},
     "lossless_claw": lambda record: {"status": "ok"},
     "jsonl_store": lambda record: {"status": "ok"},
+    "gbrain": lambda record: {"status": "ok"},
     "mock_healthy": lambda record: {"status": "ok"},
 }
 
@@ -146,7 +147,7 @@ TOOL_DEFINITIONS: tuple[dict[str, Any], ...] = (
             "required": ["memory_type"],
             "additionalProperties": False,
             "properties": {
-                "memory_type": {"type": "string", "enum": ["file_corpus", "transcript", "local"]},
+                "memory_type": {"type": "string", "enum": ["file_corpus", "transcript", "local", "knowledge"]},
                 "content_ref": {"type": "string", "minLength": 1},
                 "content": {"type": "string", "minLength": 1},
                 "pointer_id": {"type": "string", "minLength": 1},
@@ -182,7 +183,7 @@ TOOL_DEFINITIONS: tuple[dict[str, Any], ...] = (
             "additionalProperties": False,
             "properties": {
                 "query": {"type": "string", "minLength": 1},
-                "memory_type": {"type": "string", "enum": ["file_corpus", "transcript", "local"]},
+                "memory_type": {"type": "string", "enum": ["file_corpus", "transcript", "local", "knowledge"]},
                 "limit": {"type": "integer", "minimum": 1, "maximum": 50, "default": 5},
                 "client": {"type": "string", "enum": ["mcp", "openclaw"], "default": "mcp"},
             },
@@ -476,6 +477,10 @@ def _content_write_through(request: dict[str, Any], arguments: dict[str, Any], s
         if not backend_enabled(config, "jsonl_store"):
             return _operator_disabled_error(request, "jsonl_store")
         return _jsonl_write_through(request, arguments, store)
+    if memory_type == "knowledge":
+        if not backend_enabled(config, "gbrain"):
+            return _operator_disabled_error(request, "gbrain")
+        return _gbrain_write_through(request, arguments, store)
     if memory_type != "file_corpus":
         if not backend_enabled(config, "lossless_claw"):
             return _operator_disabled_error(request, "lossless_claw")
@@ -572,6 +577,54 @@ def _jsonl_write_through(request: dict[str, Any], arguments: dict[str, Any], sto
 
     result = _ok_cache_result(request, [_cache_item(record)])
     return {**result, "selected_backend": "jsonl_store", "write_mode": "jsonl-local"}
+
+
+def _gbrain_write_through(request: dict[str, Any], arguments: dict[str, Any], store: CacheStore) -> dict[str, Any]:
+    """EN-035: knowledge pages route to gbrain's capture entrance.
+
+    Fixture mode synthesizes the capture receipt shape (slug pointer + hash)
+    disclosed as fixture-only. Live-local degrades honestly until the
+    allowlisted `gbrain capture` subprocess boundary is wired against a
+    configured local install — no CLI flags are guessed.
+    """
+    if resolve_backend_mode() == "live-local":
+        return {
+            "request_id": request["request_id"],
+            "operation": request["operation"],
+            "status": "error",
+            "results": [],
+            "verification_state": "unknown",
+            "error": {
+                "code": "BACKEND_UNAVAILABLE",
+                "category": "backend_unavailable",
+                "message": "Live gbrain capture is not wired yet (EN-035); fixture mode proves the contract.",
+                "details": {"backend_id": "gbrain"},
+            },
+        }
+
+    content = arguments["content"]
+    timestamp = _timestamp()
+    memory_id = "memory-" + hashlib.sha256(f"{content}{timestamp}".encode()).hexdigest()[:16]
+    from memorycore.gbrain_adapter import gbrain_pointer
+
+    pointer = gbrain_pointer(memory_id)
+    record = cache_write(
+        store,
+        {
+            "memory_type": "knowledge",
+            "content_ref": pointer["pointer_id"],
+            "source_pointer": pointer,
+            "verification": "unknown",
+            "content_hash": hashlib.sha256(content.encode("utf-8")).hexdigest(),
+        },
+        timestamp=timestamp,
+    )
+    record["flush_state"] = "flushed"
+    record["updated_at"] = timestamp
+    store.upsert(record)
+
+    result = _ok_cache_result(request, [_cache_item(record)])
+    return {**result, "selected_backend": "gbrain", "write_mode": "fixture-only"}
 
 
 def _callback_delivery_instruction(request: dict[str, Any], arguments: dict[str, Any], store: CacheStore) -> dict[str, Any]:

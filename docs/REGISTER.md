@@ -24,7 +24,8 @@ Stable = UCXM has no − and no ?. Scores are lazy and must carry reasons.
 | EN-015 | Live-local backend mode switch | EN-008 | built | | scripts/validate_mvp_live_mode.py | MEMORYCORE_BACKEND_MODE; fixture default |
 | EN-016 | Transient content write-through | EN-013 | built | | docs/adr/0005-transient-content-write-through.md | proven against real QMD 2026-07-04 |
 | EN-017 | Public repo with CI | EN-001 | built | | .github/workflows/ci.yml | github.com/openreflect org, leak check run |
-| EN-018 | Real backend-proof verification | GAP-001 | built | +00+ | scripts/validate_mvp_real_verify.py | U: core freshness promise; M: deterministic CLI read-back; proven on real index 2026-07-05 |
+| EN-018 | Real backend-proof verification | EN-035 | gbrain knowledge backend | EN-013 | built | | scripts/validate_mvp_gbrain_adapter.py | fourth backend, first knowledge_brain occupant (garrytan/gbrain, npm 1.3.1): capture-receipt contract (slug+hash), knowledge memory type routed, fixture-proven; live capture shell-out is the next inch |
+| GAP-001 | built | +00+ | scripts/validate_mvp_real_verify.py | U: core freshness promise; M: deterministic CLI read-back; proven on real index 2026-07-05 |
 | EN-019 | LCM callback write transport | RISK-001 | built | +000 | scripts/validate_mvp_callback_delivery.py | U: unlocks transcript writes; delivery instruction + confirm tool, simulated executor validated |
 | EN-020 | JSONL local file backend | EN-013 | built | | scripts/validate_mvp_jsonl_backend.py | zero-dependency third backend; memory_type local, write-through + hash verify in every mode; git-native provenance candidate |
 | EN-021 | Attributed multi-backend recall | EN-013 | concept | | docs/CACHING_MEMORY_ROUTER.md | router becomes synthesizer: fan-out reads, attributed merge; design merge contract before OG-003 envelope freezes |
@@ -64,7 +65,7 @@ Stable = UCXM has no − and no ?. Scores are lazy and must carry reasons.
 | IDEA-002 | Re-verification TTL policy | GAP-001 | idea | | | verified stamps should degrade |
 | IDEA-003 | LCM ingest write-through | EN-016 | idea | | | needs RISK-001 transport decision |
 | IDEA-004 | Honcho peer memory adapter | EN-004 | idea | | | peer/session reasoning backend |
-| IDEA-005 | gbrain knowledge adapter | EN-004 | idea | | | knowledge-brain pages |
+| IDEA-005 | gbrain knowledge adapter | EN-004 | idea | | | graduated to EN-035 |
 | IDEA-006 | Memory fabric substrates | EN-004 | idea | | | Notion Drive S3 spreadsheets |
 | IDEA-007 | HTTP API and SDK | EN-003 | idea | | | REST surface, typed primitives |
 | IDEA-008 | Operator UI provenance drilldown | EN-006 | idea | | | summary DAG viewer, doctor |
