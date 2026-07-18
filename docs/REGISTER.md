@@ -51,6 +51,7 @@ Stable = UCXM has no − and no ?. Scores are lazy and must carry reasons.
 | GAP-005 | SQLite WAL not enabled | EN-013 | concept | | docs/AGENT_CONTEXT.md | concurrent MCP plus CLI writers |
 | GAP-006 | Content search misses local memories | EN-020 | superseded | | scripts/validate_mvp_jsonl_backend.py | closed by cache_search jsonl content fan-out with attribution (first EN-021 slice) |
 | GAP-007 | Verify tool description misleads clients | EN-018 | superseded | | memorycore/mcp_surface.py | closed: description now states jsonl record verify is real every mode |
+| EN-034 | Steel console E2E sweep | EN-026 | built | | scripts/validate_local_console_e2e.mjs | 25 checks through a real browser over CDP: every control, filter, reveal+hash, pack, declare, forget; local-only eval; found and fixed declare-form wipe on live re-render |
 | GAP-008 | Stale MCP server after upgrade | EN-026 | concept | | docs/REGISTER.md | long-lived server processes run pre-upgrade code; config honored per-call but modules load per-process; found live 2026-07-18 when a disabled backend accepted a write from the stale session server; mitigation: restart/reconnect servers after upgrades, consider version stamp in results |
 
 ## Ideas

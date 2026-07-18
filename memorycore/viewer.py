@@ -887,11 +887,20 @@ function renderControl() {
          <span class="name" style="font-weight:600">${esc(cls)}</span></div>
          <div class="desc">${esc((c.class_info[cls] || "").replace("Reserved: ", ""))}</div></div>`).join("")}</div>`;
 
+  // Preserve in-progress form input across live re-renders.
+  const decPrev = {
+    id: document.getElementById("dec-id")?.value || "",
+    name: document.getElementById("dec-name")?.value || "",
+    cls: document.getElementById("dec-class")?.value || "",
+  };
   document.getElementById("declare").innerHTML = `
     <input type="text" id="dec-id" placeholder="backend id (slug)" ${!LIVE ? "disabled" : ""}>
     <input type="text" id="dec-name" placeholder="display name" ${!LIVE ? "disabled" : ""}>
     <select id="dec-class" ${!LIVE ? "disabled" : ""}>${(c.classes || []).map(x => `<option>${esc(x)}</option>`).join("")}</select>
     <button class="btn" ${!LIVE ? "disabled" : ""} onclick="declareBackend()">Declare backend</button>`;
+  document.getElementById("dec-id").value = decPrev.id;
+  document.getElementById("dec-name").value = decPrev.name;
+  if (decPrev.cls) document.getElementById("dec-class").value = decPrev.cls;
 
   const cfgEvents = DATA.audit.filter(a => a.config_change).slice(0, 30);
   document.getElementById("cfghistory").innerHTML = cfgEvents.length === 0 ?
@@ -1049,12 +1058,15 @@ async function exportPack(recordId) {
   } catch (e) { toast("export failed: " + e, false); }
 }
 
-function declareBackend() {
+async function declareBackend() {
   const id = document.getElementById("dec-id").value.trim();
   const name = document.getElementById("dec-name").value.trim();
   const cls = document.getElementById("dec-class").value;
   if (!id) { toast("backend id required", false); return; }
-  control("declare", { backend_id: id, display_name: name, class: cls });
+  const out = await controlRaw("declare", { backend_id: id, display_name: name, class: cls });
+  toast(out.message || out.status, out.status === "ok");
+  if (out.status === "ok") ["dec-id", "dec-name"].forEach(x => { document.getElementById(x).value = ""; });
+  poll();
 }
 
 document.getElementById("btn-flush").onclick = () => control("flush", {});
