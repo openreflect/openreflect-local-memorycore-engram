@@ -361,12 +361,15 @@ def write_viewer(cache_db: Path, audit_log: Path, output: Path) -> Path:
     return output
 
 
-def serve_viewer(cache_db: Path, audit_log: Path, *, port: int = 8787) -> None:
-    """Serve the dashboard live on localhost, regenerated per request.
+def serve_viewer(cache_db: Path, audit_log: Path, *, port: int = 8787, host: str = "127.0.0.1") -> None:
+    """Serve the dashboard live, regenerated per request.
 
-    Loopback-only by design: the receipts surface is a local operator
-    console, never a network service. GET / renders fresh HTML; the page
-    polls GET /data.json every few seconds so state changes appear live.
+    Loopback-only by default: the receipts surface is a local operator
+    console, never a network service. Binding another host (e.g. 0.0.0.0
+    for a local browser-automation container) is a deliberate operator
+    choice via --host; control actions stay gated by the custom header
+    either way. GET / renders fresh HTML; the page polls GET /data.json
+    every few seconds so state changes appear live.
     """
     import http.server
     import json as _json
@@ -414,8 +417,8 @@ def serve_viewer(cache_db: Path, audit_log: Path, *, port: int = 8787) -> None:
         def log_message(self, *args: Any) -> None:  # quiet by default
             pass
 
-    server = http.server.ThreadingHTTPServer(("127.0.0.1", port), Handler)
-    print(f"Engram receipts live at http://127.0.0.1:{port} (Ctrl-C to stop)")
+    server = http.server.ThreadingHTTPServer((host, port), Handler)
+    print(f"Engram receipts live at http://{host}:{port} (Ctrl-C to stop)")
     server.serve_forever()
 
 

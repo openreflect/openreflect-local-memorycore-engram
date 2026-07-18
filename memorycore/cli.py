@@ -58,7 +58,7 @@ def main(argv: list[str] | None = None) -> int:
 
             cache_db = Path(os.environ.get("MEMORYCORE_CACHE_DB", ROOT / ".memorycore" / "cache.sqlite3"))
             if args.serve:
-                serve_viewer(cache_db, Path(args.audit_log), port=args.port)
+                serve_viewer(cache_db, Path(args.audit_log), port=args.port, host=args.host)
                 return 0
             output = write_viewer(cache_db, Path(args.audit_log), Path(args.output))
             return _emit({"status": "ok", "viewer": str(output)}, args.json)
@@ -119,6 +119,7 @@ def _parser() -> argparse.ArgumentParser:
     viewer.add_argument("--output", default=str(ROOT / ".memorycore" / "viewer.html"))
     viewer.add_argument("--serve", action="store_true")
     viewer.add_argument("--port", type=int, default=8787)
+    viewer.add_argument("--host", default="127.0.0.1")
 
     return parser
 
