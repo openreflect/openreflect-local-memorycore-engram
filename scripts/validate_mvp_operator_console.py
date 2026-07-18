@@ -122,14 +122,54 @@ def main() -> int:
             fstates = {r["record_id"]: r["flush_state"] for r in failed["results"]}
             require(fstates.get(routed["results"][0]["record_id"]) == "failed", "no-adapter flush must fail honestly")
 
+            # Restore local routing, then exercise reveal / declare / pack.
+            handle_control("routing", {"memory_type": "local", "backends": ["jsonl_store"]}, **ctl)
+            secret = "reveal target: the console demonstrated its own receipt."
+            revealable = call_tool("memorycore_remember", {"memory_type": "local", "content": secret}, **kwargs)
+            reveal_id = revealable["results"][0]["record_id"]
+
+            out = handle_control("reveal", {"record_id": reveal_id}, **ctl)
+            require(out["status"] == "ok" and out["content"] == secret, "reveal should return backend content")
+            require(out["hash_match"] is True, "healthy reveal should hash-match")
+
+            store_path = Path(os.environ["MEMORYCORE_JSONL_STORE"])
+            lines = store_path.read_text(encoding="utf-8").splitlines()
+            tampered = []
+            for line in lines:
+                obj = json.loads(line)
+                if secret in obj.get("content", ""):
+                    obj["content"] = obj["content"] + " [tampered]"
+                tampered.append(json.dumps(obj, sort_keys=True, separators=(",", ":")))
+            store_path.write_text("\n".join(tampered) + "\n", encoding="utf-8")
+            out = handle_control("reveal", {"record_id": reveal_id}, **ctl)
+            require(out["hash_match"] is False, "tampered reveal must expose the mismatch")
+
+            require(handle_control("declare", {"backend_id": "gbrain", "display_name": "gbrain", "class": "knowledge_brain"}, **ctl)["status"] == "ok",
+                    "declare should accept a reserved-class backend")
+            require(handle_control("declare", {"backend_id": "gbrain", "class": "knowledge_brain"}, **ctl)["status"] == "error",
+                    "duplicate declare should be rejected")
+            require(handle_control("declare", {"backend_id": "bad", "class": "made_up"}, **ctl)["status"] == "error",
+                    "unknown class should be rejected")
+            require(handle_control("declare", {"backend_id": "Bad-Slug!", "class": "knowledge_brain"}, **ctl)["status"] == "error",
+                    "invalid slug should be rejected")
+            declared_now = {b["backend_id"]: b for b in describe_backends(load_config(config_path))}
+            require(declared_now["gbrain"]["enabled"] is False, "declared backends must start disabled")
+
+            out = handle_control("pack", {"record_id": reveal_id}, **ctl)
+            require(out["status"] == "ok" and out["integrity"], "pack export should succeed with integrity hash")
+            require(reveal_id in out["human_readable"], "pack should name the record")
+            require(secret not in json.dumps(out["pack"]), "pack must stay content-sparse")
+
             # Every control action left a content-sparse receipt.
             records = [json.loads(line) for line in audit_log.read_text(encoding="utf-8").splitlines()]
             ui_records = [r for r in records if r["client_surface"] == "operator_ui"]
             actions = {r.get("config_change", {}).get("action") for r in ui_records}
-            require({"backend_toggle", "routing_change", "mode_change", "verify_all", "forget"} <= actions,
+            require({"backend_toggle", "routing_change", "mode_change", "verify_all", "forget",
+                     "reveal", "declare_backend", "pack_export"} <= actions,
                     f"missing control receipts: {actions}")
             for record in records:
                 assert_public_safe(record)
+            require(secret not in audit_log.read_text(encoding="utf-8"), "revealed content leaked into audit")
             require("should not land" not in config_path.read_text(encoding="utf-8"), "content leaked into config")
 
     except (json.JSONDecodeError, KeyError, ValueError) as exc:

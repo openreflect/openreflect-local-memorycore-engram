@@ -37,6 +37,13 @@ Stable = UCXM has no − and no ?. Scores are lazy and must carry reasons.
 | EN-024 | Local provenance viewer | IDEA-008 | built | | memorycore/viewer.py | memory receipts dashboard: verification badges, backend attribution, per-record receipt drilldown, audit trail; content-sparse; `memorycore viewer` |
 | EN-025 | Alice customer-zero adoption | EN-023 | concept | | docs/REGISTER.md | step 1 (2026-07-17): memorycore attached as MCP server to the working Claude Code session; OpenClaw config untouched; observe real usage before deeper integration |
 | EN-026 | Operator console audited controls | EN-024 | built | | scripts/validate_mvp_operator_console.py | backend on/off, routing matrix (mirroring via multi-check), mode switch, flush/verify-all/forget; config entries not code constants; reserved classes for future systems; declared-no-adapter degrades honestly; every action audited as operator_ui |
+| EN-027 | Content reveal live hash proof | EN-026 | built | | scripts/validate_mvp_operator_console.py | live-server only, on-demand, hash computed in front of the operator, reads receipted as content_access; snapshots stay content-free |
+| EN-028 | Console search and filters | EN-024 | built | | memorycore/viewer.py | memory table text search + state/backend/type filters, client-side |
+| EN-029 | Audit explorer filters | EN-024 | built | | memorycore/viewer.py | filter trail by operation, client surface, backend, text; deeper history |
+| EN-030 | Activity trend charts | EN-024 | built | | memorycore/viewer.py | memories over time + audit activity sparklines, dataviz-validated |
+| EN-031 | Config history timeline | EN-026 | built | | memorycore/viewer.py | render operator_ui config receipts as who-changed-what-when view |
+| EN-032 | Declare backend form | EN-026 | built | | scripts/validate_mvp_operator_console.py | populate reserved classes from the UI; new entries start disabled |
+| EN-033 | Evidence pack export | EN-024 | built | | scripts/validate_mvp_operator_console.py | one-click content-sparse pack: record receipt + related audit + integrity hash; FR-012 in local clothes |
 | GAP-001 | Verify echoes caller assertion | EN-005 | superseded | | memorycore/cli.py | closed by EN-018; fixture echo remains contract-only |
 | GAP-002 | No flush retry deadletter | EN-013 | concept | | docs/AGENT_CONTEXT.md | failed records dead-end forever |
 | GAP-003 | Request ids collide | EN-011 | concept | | docs/MCP_HANDOFF.md | req_mcp_search every call |

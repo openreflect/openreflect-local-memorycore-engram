@@ -59,7 +59,7 @@ def collect_viewer_data(cache_db: Path, audit_log: Path) -> dict[str, Any]:
                 }
             )
 
-    audit = read_recent(audit_log, limit=200) if audit_log.exists() else []
+    audit = read_recent(audit_log, limit=500) if audit_log.exists() else []
     audit = list(reversed(audit))  # newest first
 
     verification_counts = {state: 0 for state in VERIFICATION_ORDER}
@@ -92,6 +92,7 @@ def collect_viewer_data(cache_db: Path, audit_log: Path) -> dict[str, Any]:
             "routing": config.get("routing", {}),
             "routing_effective": {k: list(v) for k, v in effective_routing(config).items()},
             "reserved_classes": ["peer_reasoning", "knowledge_brain", "provenance_fabric"],
+            "classes": list(__import__("memorycore.operator_config", fromlist=["BACKEND_CLASSES"]).BACKEND_CLASSES),
             "config_path": str(config_path),
         },
     }
@@ -220,6 +221,129 @@ def handle_control(
             "status": "ok",
             "message": f"forgot {record_id} (cache row removed; backend content and audit receipts remain)",
         }
+
+    if action == "reveal":
+        import hashlib
+
+        from memorycore.jsonl_adapter import jsonl_get, memory_id_from_pointer
+        from memorycore.mcp_surface import _jsonl_store_path
+
+        record_id = str(payload.get("record_id", ""))
+        store = CacheStore(cache_db)
+        try:
+            record = store.get(record_id)
+        finally:
+            store.close()
+        if record is None:
+            return {"status": "error", "message": f"no such record: {record_id}"}
+
+        backend_id = record["source_pointer"].get("backend_id")
+        content: str | None = None
+        note = ""
+        if backend_id == "jsonl_store":
+            line = jsonl_get(_jsonl_store_path(), memory_id_from_pointer(record["source_pointer"].get("pointer_id", "")))
+            if line is None:
+                return {"status": "error", "message": "content not found in jsonl store (missing)"}
+            content = line.get("content", "")
+        elif backend_id == "qmd":
+            source_uri = record["source_pointer"].get("source_uri", "")
+            source = Path(source_uri).expanduser() if source_uri and not source_uri.startswith("qmd://") else None
+            if source is None or not source.exists():
+                return {"status": "error", "message": "source file not found on disk (missing or fixture pointer)"}
+            content = source.read_text(encoding="utf-8")
+            note = "hash covers the full materialized file (frontmatter + content)"
+        else:
+            return {"status": "error", "message": f"reveal not supported for backend {backend_id} yet"}
+
+        computed = hashlib.sha256(content.encode("utf-8")).hexdigest()
+        stored = record.get("content_hash") or ""
+        hash_match = (computed == stored) if stored else None
+
+        audit = build_audit_record(
+            {"request_id": "req_operator_ui_reveal", "client_surface": "operator_ui", "operation": "content_access"},
+            {"status": "ok", "results": [{"pointer": record["source_pointer"], "verification_state": record["verification"]}]},
+            timestamp=_now(),
+        )
+        audit["config_change"] = {"action": "reveal", "record_id": record_id, "hash_match": hash_match}
+        append_record(audit_log, audit)
+        return {
+            "status": "ok",
+            "record_id": record_id,
+            "backend_id": backend_id,
+            "content": content,
+            "stored_hash": stored,
+            "computed_hash": computed,
+            "hash_match": hash_match,
+            "note": note,
+        }
+
+    if action == "declare":
+        import re
+
+        from memorycore.operator_config import BACKEND_CLASSES
+
+        backend_id = str(payload.get("backend_id", "")).strip()
+        display_name = str(payload.get("display_name", "")).strip() or backend_id
+        backend_class = str(payload.get("class", "")).strip()
+        if not re.fullmatch(r"[a-z][a-z0-9_]{1,31}", backend_id):
+            return {"status": "error", "message": "backend id must be a lowercase slug (a-z, 0-9, _)"}
+        if backend_class not in BACKEND_CLASSES:
+            return {"status": "error", "message": f"class must be one of: {', '.join(BACKEND_CLASSES)}"}
+        config = load_config(config_path)
+        if backend_id in config["backends"]:
+            return {"status": "error", "message": f"backend already declared: {backend_id}"}
+
+        def mutate(cfg: dict[str, Any]) -> None:
+            cfg["backends"][backend_id] = {"enabled": False, "class": backend_class, "display_name": display_name}
+
+        apply_config_change(
+            config_path, audit_log, action="declare_backend",
+            detail={"backend_id": backend_id, "class": backend_class}, mutate=mutate,
+        )
+        return {"status": "ok", "message": f"declared {backend_id} ({backend_class}) — starts disabled"}
+
+    if action == "pack":
+        import hashlib as _hashlib
+        import json as _json
+
+        record_id = str(payload.get("record_id", ""))
+        store = CacheStore(cache_db)
+        try:
+            record = store.get(record_id)
+        finally:
+            store.close()
+        if record is None:
+            return {"status": "error", "message": f"no such record: {record_id}"}
+        related = [
+            entry for entry in (read_recent(audit_log, limit=500) if audit_log.exists() else [])
+            if record["content_ref"] in entry.get("pointer_ids", [])
+            or record["source_pointer"].get("pointer_id") in entry.get("pointer_ids", [])
+        ]
+        body = {"record": record, "related_audit": related, "generated_at": _now(), "content_sparse": True}
+        integrity = _hashlib.sha256(_json.dumps(body, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
+        lines = [
+            "# Engram evidence pack",
+            f"Generated {body['generated_at']} — content-sparse (pointers and hashes only).",
+            "",
+            f"Record `{record['record_id']}` — {record['memory_type']} via {record['source_pointer'].get('backend_id')}",
+            f"Pointer: `{record['content_ref']}`",
+            f"Content hash: `{record.get('content_hash') or '(none)'}`",
+            f"State: {record['verification']} / {record['flush_state']}",
+            f"Created {record['created_at']} · updated {record['updated_at']}",
+            "",
+            f"## Audit entries ({len(related)})",
+            *[f"- {e['timestamp']} {e['operation']} {e['verification_state']} `{e['audit_id']}`" for e in related],
+            "",
+            f"Pack integrity: sha256 `{integrity}`",
+        ]
+        audit = build_audit_record(
+            {"request_id": "req_operator_ui_pack", "client_surface": "operator_ui", "operation": "pack_export"},
+            {"status": "ok", "results": [{"pointer": record["source_pointer"], "verification_state": record["verification"]}]},
+            timestamp=_now(),
+        )
+        audit["config_change"] = {"action": "pack_export", "record_id": record_id, "audit_entries": len(related)}
+        append_record(audit_log, audit)
+        return {"status": "ok", "pack": body, "integrity": integrity, "human_readable": "\n".join(lines)}
 
     return {"status": "error", "message": f"unknown control action: {action}"}
 
@@ -381,6 +505,20 @@ _TEMPLATE = r"""<!doctype html>
   .audit-row:last-child { border-bottom: none; }
   .empty { color: var(--muted); font-style: italic; padding: 12px 4px; }
   footer { color: var(--muted); font-size: 12px; margin-top: 24px; }
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; align-items: center; }
+  .filters input[type=text], .filters select, .declare input, .declare select {
+    font: inherit; font-size: 12.5px; padding: 5px 10px; border: 1px solid var(--ring);
+    border-radius: 8px; background: var(--page); color: var(--ink);
+  }
+  .filters .count { font-size: 12px; color: var(--muted); margin-left: auto; }
+  .trend-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  .trend-grid h3 { font-size: 12px; color: var(--ink-2); font-weight: 600; margin-bottom: 6px; }
+  .trend-grid svg { display: block; width: 100%; height: 72px; }
+  .hashcmp { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 8px 0; font-size: 12px; }
+  .revealpane pre.content { max-height: 260px; overflow: auto; white-space: pre-wrap; }
+  .cfg-row { display: grid; grid-template-columns: 158px 130px 1fr; gap: 10px; padding: 6px 4px; border-bottom: 1px solid var(--grid); font-size: 12.5px; }
+  .cfg-row:last-child { border-bottom: none; }
+  .declare { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
   .ctl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
   .bk-card { border: 1px solid var(--ring); border-radius: 10px; padding: 12px 14px; background: var(--page); }
   .bk-card.future { border-style: dashed; opacity: .75; }
@@ -451,6 +589,16 @@ _TEMPLATE = r"""<!doctype html>
     <button class="btn" id="btn-flush">Flush pending</button>
     <button class="btn" id="btn-verify">Re-verify all stamps</button>
   </div>
+  <div class="declare" id="declare"></div>
+  <h2 style="margin-top:18px">Configuration history <span style="color:var(--muted);font-weight:400">— who changed what, when</span></h2>
+  <div id="cfghistory"></div>
+</section>
+<section>
+  <h2>Activity</h2>
+  <div class="trend-grid">
+    <div><h3 id="trend-mem-h">Memories over time</h3><div id="trend-mem"></div></div>
+    <div><h3 id="trend-audit-h">Audit events per day</h3><div id="trend-audit"></div></div>
+  </div>
 </section>
 <div id="toast"></div>
 <section>
@@ -464,6 +612,13 @@ _TEMPLATE = r"""<!doctype html>
 </section>
 <section>
   <h2>Memory records <span style="color:var(--muted);font-weight:400">— click a row for its receipt</span></h2>
+  <div class="filters">
+    <input type="text" id="mf-text" placeholder="search records…" oninput="renderAll()">
+    <select id="mf-state" onchange="renderAll()"></select>
+    <select id="mf-backend" onchange="renderAll()"></select>
+    <select id="mf-type" onchange="renderAll()"></select>
+    <span class="count" id="mf-count"></span>
+  </div>
   <table id="memtable">
     <thead><tr><th>Record</th><th>Type</th><th>Backend</th><th>Pointer</th><th>Verification</th><th>Delivery</th><th>Updated</th></tr></thead>
     <tbody></tbody>
@@ -471,6 +626,13 @@ _TEMPLATE = r"""<!doctype html>
 </section>
 <section>
   <h2>Audit trail <span style="color:var(--muted);font-weight:400">— newest first, content-sparse by contract</span></h2>
+  <div class="filters">
+    <input type="text" id="af-text" placeholder="search audit…" oninput="renderAll()">
+    <select id="af-op" onchange="renderAll()"></select>
+    <select id="af-client" onchange="renderAll()"></select>
+    <select id="af-backend" onchange="renderAll()"></select>
+    <span class="count" id="af-count"></span>
+  </div>
   <div id="audit"></div>
 </section>
 <footer id="foot"></footer>
@@ -538,9 +700,26 @@ document.querySelectorAll(".fill").forEach(el => {
   el.onmouseleave = hideTip;
 });
 
+syncSelect("mf-state", "all states", records.map(r => r.verification));
+syncSelect("mf-backend", "all backends", records.map(r => r.source_pointer.backend_id || "unrouted"));
+syncSelect("mf-type", "all types", records.map(r => r.memory_type));
+const mfText = (document.getElementById("mf-text").value || "").toLowerCase();
+const mfState = document.getElementById("mf-state").value;
+const mfBackend = document.getElementById("mf-backend").value;
+const mfType = document.getElementById("mf-type").value;
+const visible = records.map((r, i) => [r, i]).filter(([r]) => {
+  const b = r.source_pointer.backend_id || "unrouted";
+  if (mfState && r.verification !== mfState) return false;
+  if (mfBackend && b !== mfBackend) return false;
+  if (mfType && r.memory_type !== mfType) return false;
+  if (mfText && !(r.record_id + " " + r.content_ref + " " + r.memory_type).toLowerCase().includes(mfText)) return false;
+  return true;
+});
+document.getElementById("mf-count").textContent = `${visible.length} of ${records.length}`;
 const tbody = document.querySelector("#memtable tbody");
 tbody.innerHTML = records.length === 0 ? '<tr><td colspan="7" class="empty">cache is empty</td></tr>' :
-  records.map((r, i) => {
+  visible.length === 0 ? '<tr><td colspan="7" class="empty">no records match the filters</td></tr>' :
+  visible.map(([r, i]) => {
     const b = r.source_pointer.backend_id || "unrouted";
     return `<tr class="mem" data-i="${i}">
       <td class="mono">${esc(r.record_id.slice(0, 18))}…</td>
@@ -552,9 +731,25 @@ tbody.innerHTML = records.length === 0 ? '<tr><td colspan="7" class="empty">cach
       <td>${esc((r.updated_at || "").replace("T", " ").replace("Z", ""))}</td></tr>`;
   }).join("");
 
+syncSelect("af-op", "all operations", DATA.audit.map(a => a.operation));
+syncSelect("af-client", "all clients", DATA.audit.map(a => a.client_surface));
+syncSelect("af-backend", "all backends", DATA.audit.map(a => a.selected_backend || "—"));
+const afText = (document.getElementById("af-text").value || "").toLowerCase();
+const afOp = document.getElementById("af-op").value;
+const afClient = document.getElementById("af-client").value;
+const afBackend = document.getElementById("af-backend").value;
+const auditVisible = DATA.audit.filter(a => {
+  if (afOp && a.operation !== afOp) return false;
+  if (afClient && a.client_surface !== afClient) return false;
+  if (afBackend && (a.selected_backend || "—") !== afBackend) return false;
+  if (afText && !JSON.stringify(a).toLowerCase().includes(afText)) return false;
+  return true;
+});
+document.getElementById("af-count").textContent = `${auditVisible.length} of ${DATA.audit.length}`;
 document.getElementById("audit").innerHTML = DATA.audit.length === 0 ?
   '<div class="empty">no audit events</div>' :
-  DATA.audit.slice(0, 60).map(a => `<div class="audit-row">
+  auditVisible.length === 0 ? '<div class="empty">no events match the filters</div>' :
+  auditVisible.slice(0, 200).map(a => `<div class="audit-row">
     <span class="t mono">${esc((a.timestamp || "").replace("T", " ").replace("Z", ""))}</span>
     <span>${esc(a.operation)}</span>
     <span><span class="dot" style="background:${backendColor(a.selected_backend)}"></span> ${esc(a.selected_backend || "—")}</span>
@@ -563,6 +758,58 @@ document.getElementById("audit").innerHTML = DATA.audit.length === 0 ?
   </div>`).join("");
 
 renderControl();
+renderTrends();
+}
+
+function syncSelect(id, allLabel, values) {
+  const el = document.getElementById(id);
+  const current = el.value;
+  const opts = [...new Set(values)].sort();
+  el.innerHTML = `<option value="">${allLabel}</option>` +
+    opts.map(v => `<option value="${esc(v)}"${v === current ? " selected" : ""}>${esc(v)}</option>`).join("");
+}
+
+function sparkSvg(points, kind) {
+  if (points.length === 0) return '<div class="empty">no data</div>';
+  const W = 320, H = 72, pad = 4;
+  const max = Math.max(...points.map(p => p.v), 1);
+  const step = (W - pad * 2) / Math.max(points.length, 1);
+  let marks = "";
+  if (kind === "bars") {
+    marks = points.map((p, i) => {
+      const h = Math.max(2, (H - pad * 2) * p.v / max);
+      return `<rect x="${(pad + i * step + 1).toFixed(1)}" y="${(H - pad - h).toFixed(1)}" width="${Math.max(2, step - 2).toFixed(1)}" height="${h.toFixed(1)}" rx="2" fill="var(--s1)" data-k="${esc(p.k)}" data-v="${p.v}"/>`;
+    }).join("");
+  } else {
+    const xy = points.map((p, i) => `${(pad + i * step + step / 2).toFixed(1)},${(H - pad - (H - pad * 2) * p.v / max).toFixed(1)}`);
+    const last = xy[xy.length - 1].split(",");
+    marks = `<polyline points="${xy.join(" ")}" fill="none" stroke="var(--s1)" stroke-width="2" stroke-linejoin="round"/>` +
+      `<circle cx="${last[0]}" cy="${last[1]}" r="3.5" fill="var(--s1)"/>`;
+  }
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    <line x1="${pad}" y1="${H - pad}" x2="${W - pad}" y2="${H - pad}" stroke="var(--baseline)" stroke-width="1"/>
+    ${marks}</svg>`;
+}
+
+function byDay(timestamps) {
+  const days = {};
+  timestamps.forEach(t => { const d = (t || "").slice(0, 10); if (d) days[d] = (days[d] || 0) + 1; });
+  return Object.keys(days).sort().map(k => ({ k, v: days[k] }));
+}
+
+function renderTrends() {
+  const created = DATA.records.map(r => r.created_at).sort();
+  let total = 0;
+  const cumulative = byDay(created).map(p => ({ k: p.k, v: (total += p.v) }));
+  document.getElementById("trend-mem").innerHTML = sparkSvg(cumulative, "line");
+  document.getElementById("trend-mem-h").textContent = `Memories over time — ${DATA.records.length} total`;
+  const perDay = byDay(DATA.audit.map(a => a.timestamp));
+  document.getElementById("trend-audit").innerHTML = sparkSvg(perDay, "bars");
+  document.getElementById("trend-audit-h").textContent = `Audit events per day — ${DATA.audit.length} in window`;
+  document.querySelectorAll("#trend-audit rect").forEach(el => {
+    el.onmousemove = e => showTip(e, `<b>${el.dataset.k}</b> — ${el.dataset.v} event(s)`);
+    el.onmouseleave = hideTip;
+  });
 }
 
 function renderControl() {
@@ -595,6 +842,24 @@ function renderControl() {
 
   document.getElementById("reserved").textContent =
     "Reserved for future systems: " + c.reserved_classes.join(" · ") + " — declare a backend entry to populate.";
+
+  document.getElementById("declare").innerHTML = `
+    <input type="text" id="dec-id" placeholder="backend id (slug)" ${!LIVE ? "disabled" : ""}>
+    <input type="text" id="dec-name" placeholder="display name" ${!LIVE ? "disabled" : ""}>
+    <select id="dec-class" ${!LIVE ? "disabled" : ""}>${(c.classes || []).map(x => `<option>${esc(x)}</option>`).join("")}</select>
+    <button class="btn" ${!LIVE ? "disabled" : ""} onclick="declareBackend()">Declare backend</button>`;
+
+  const cfgEvents = DATA.audit.filter(a => a.config_change).slice(0, 30);
+  document.getElementById("cfghistory").innerHTML = cfgEvents.length === 0 ?
+    '<div class="empty">no configuration changes yet</div>' :
+    cfgEvents.map(a => {
+      const ch = a.config_change, detail = Object.entries(ch).filter(([k]) => k !== "action")
+        .map(([k, v]) => `${k}=${Array.isArray(v) ? v.join("+") : v}`).join(" · ");
+      return `<div class="cfg-row">
+        <span class="t mono" style="color:var(--muted)">${esc((a.timestamp || "").replace("T", " ").replace("Z", ""))}</span>
+        <span style="font-weight:600">${esc(ch.action)}</span>
+        <span style="color:var(--ink-2)">${esc(detail)}</span></div>`;
+    }).join("");
 
   const backends = c.backends;
   const types = Object.keys(c.routing);
@@ -668,11 +933,71 @@ state    ${esc(r.verification)} / ${esc(r.flush_state)}</pre></div>
     <div><h3>Audit entries for this pointer (${related.length})</h3><pre>${related.length ?
       esc(related.map(a => `${a.timestamp}  ${a.operation}  ${a.verification_state}  ${a.audit_id}`).join("\n")) :
       "none recorded"}</pre>
-      <button class="btn danger" style="margin-top:8px" ${!LIVE ? "disabled" : ""}
-        onclick="control('forget',{record_id:'${esc(r.record_id)}'})">Forget this memory</button></div>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+        <button class="btn" ${!LIVE ? "disabled" : ""} onclick="reveal('${esc(r.record_id)}', this)">Reveal content</button>
+        <button class="btn" ${!LIVE ? "disabled" : ""} onclick="exportPack('${esc(r.record_id)}')">Export evidence pack</button>
+        <button class="btn danger" ${!LIVE ? "disabled" : ""}
+          onclick="control('forget',{record_id:'${esc(r.record_id)}'})">Forget</button>
+      </div>
+      <div class="revealpane"></div></div>
   </div></td>`;
   row.after(d);
 });
+
+async function controlRaw(action, payload) {
+  const res = await fetch("control", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-MemoryCore-Control": "1" },
+    body: JSON.stringify({ action, ...payload }),
+  });
+  return res.json();
+}
+
+async function reveal(recordId, btn) {
+  const pane = btn.closest("td").querySelector(".revealpane");
+  pane.innerHTML = '<div class="empty">fetching from backend store…</div>';
+  try {
+    const out = await controlRaw("reveal", { record_id: recordId });
+    if (out.status !== "ok") { pane.innerHTML = `<div class="empty">${esc(out.message)}</div>`; toast(out.message, false); return; }
+    const match = out.hash_match;
+    const verdict = match === true
+      ? `<span class="badge"><span class="ic" style="color:var(--good)">✓</span>hash verified live</span>`
+      : match === false
+        ? `<span class="badge"><span class="ic" style="color:var(--critical)">✕</span>HASH MISMATCH — content differs from receipt</span>`
+        : `<span class="badge"><span class="ic" style="color:var(--muted)">?</span>no stored hash to compare</span>`;
+    pane.innerHTML = `
+      <div class="hashcmp">${verdict}
+        <span class="mono" style="color:var(--muted)">stored ${esc((out.stored_hash || "—").slice(0, 20))}… · computed ${esc(out.computed_hash.slice(0, 20))}…</span>
+        ${out.note ? `<span style="color:var(--muted)">${esc(out.note)}</span>` : ""}</div>
+      <pre class="content">${esc(out.content)}</pre>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:4px">read receipted as content_access — content shown live, never stored in this page</div>`;
+    toast("content revealed — read receipted", true);
+    poll();
+  } catch (e) { pane.innerHTML = ""; toast("reveal failed: " + e, false); }
+}
+
+async function exportPack(recordId) {
+  try {
+    const out = await controlRaw("pack", { record_id: recordId });
+    if (out.status !== "ok") { toast(out.message, false); return; }
+    const blob = new Blob([JSON.stringify(out, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `engram-pack-${recordId}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast(`evidence pack exported — integrity ${out.integrity.slice(0, 16)}…`, true);
+    poll();
+  } catch (e) { toast("export failed: " + e, false); }
+}
+
+function declareBackend() {
+  const id = document.getElementById("dec-id").value.trim();
+  const name = document.getElementById("dec-name").value.trim();
+  const cls = document.getElementById("dec-class").value;
+  if (!id) { toast("backend id required", false); return; }
+  control("declare", { backend_id: id, display_name: name, class: cls });
+}
 
 document.getElementById("btn-flush").onclick = () => control("flush", {});
 document.getElementById("btn-verify").onclick = () => control("verify_all", {});

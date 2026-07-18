@@ -70,6 +70,9 @@ def main() -> int:
             require("audit_" in html, "audit ids missing")
             require("data-theme" in html and "prefers-color-scheme" in html, "theme support missing")
             require("__ENGRAM_DATA__" not in html, "data placeholder not substituted")
+            for element_id in ("mf-text", "af-op", "trend-mem", "cfghistory", "declare", "controlplane"):
+                require(f'id="{element_id}"' in html, f"console element missing: {element_id}")
+            require("revealpane" in html and "exportPack" in html, "reveal/pack surface missing")
 
             # Content-sparse: memory content never enters the receipt surface.
             require(SECRET_CONTENT not in html, "memory content leaked into the viewer")
