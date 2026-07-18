@@ -73,6 +73,10 @@ def main() -> int:
             for element_id in ("mf-text", "af-op", "trend-mem", "cfghistory", "declare", "controlplane"):
                 require(f'id="{element_id}"' in html, f"console element missing: {element_id}")
             require("revealpane" in html and "exportPack" in html, "reveal/pack surface missing")
+            require("data-help" in html and "bindHelp" in html, "help tooltip layer missing")
+            require("Quick Markdown Search" in html, "backend descriptions missing from data")
+            require("npmjs.com/package/@tobilu/qmd" in html, "backend docs url missing")
+            require("Conversation moments" in html, "memory type descriptions missing")
 
             # Content-sparse: memory content never enters the receipt surface.
             require(SECRET_CONTENT not in html, "memory content leaked into the viewer")

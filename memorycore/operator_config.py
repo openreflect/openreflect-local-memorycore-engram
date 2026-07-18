@@ -40,22 +40,45 @@ BACKEND_CLASSES = (
 # Adapters that actually exist in this codebase, with their capabilities.
 # A config may declare backends beyond this set; they render as
 # declared/no-adapter and never receive traffic.
+_REPO_DOCS = "https://github.com/openreflect/openreflect-local-memorycore-engram/blob/main/docs"
+
 INSTALLED_ADAPTERS: dict[str, dict[str, Any]] = {
     "jsonl_store": {
         "class": "local_record",
         "display_name": "JSONL Store",
         "capabilities": {"read": True, "write_through": True, "verify": "always", "content_search": True},
+        "description": "Zero-dependency append-only file store: one JSON line per memory, hash-verified in every mode, git-trackable. The always-available default.",
+        "url": f"{_REPO_DOCS}/CACHING_MEMORY_ROUTER.md",
     },
     "qmd": {
         "class": "corpus_index",
         "display_name": "QMD",
         "capabilities": {"read": True, "write_through": True, "verify": "live-local", "content_search": False},
+        "description": "Quick Markdown Search: a local corpus index with hybrid BM25 + vector search. Memories become real markdown files, semantically searchable; verification proves disk and index agree.",
+        "url": "https://www.npmjs.com/package/@tobilu/qmd",
     },
     "lossless_claw": {
         "class": "transcript_continuity",
         "display_name": "Lossless-Claw (LCM)",
         "capabilities": {"read": True, "write_through": "callback", "verify": "pending", "content_search": False},
+        "description": "OpenClaw's conversation-continuity engine: append-only transcript memory with summary DAGs. Writes travel by callback delivery (ADR-0006); existence is proven via describe.",
+        "url": f"{_REPO_DOCS}/adr/0006-lcm-callback-write-transport.md",
     },
+}
+
+CLASS_INFO: dict[str, str] = {
+    "local_record": "Durable local notes: fast, hash-proofed, no external dependencies.",
+    "corpus_index": "Semantic search over document collections: memories as indexed files.",
+    "transcript_continuity": "Conversation history: ordered messages, summaries, session context.",
+    "peer_reasoning": "Reserved: per-person/agent insight memory — what each peer knows and wants (e.g. Honcho).",
+    "knowledge_brain": "Reserved: curated knowledge pages with write-through capture (e.g. gbrain).",
+    "provenance_fabric": "Reserved: external substrates as governed memory — Notion, Drive, S3, filesystems.",
+}
+
+MEMORY_TYPE_INFO: dict[str, str] = {
+    "local": "Quick durable notes: routed to the JSONL store, verified by content hash in every mode.",
+    "file_corpus": "Document-shaped memories: materialized as markdown files and semantically indexed by QMD.",
+    "transcript": "Conversation moments: delivered into Lossless-Claw via the ADR-0006 callback transport.",
 }
 
 DEFAULT_CONFIG: dict[str, Any] = {
@@ -116,14 +139,17 @@ def describe_backends(config: dict[str, Any]) -> list[dict[str, Any]]:
     described = []
     for backend_id, entry in config.get("backends", {}).items():
         installed = INSTALLED_ADAPTERS.get(backend_id)
+        backend_class = entry.get("class", "unclassified")
         described.append(
             {
                 "backend_id": backend_id,
                 "display_name": entry.get("display_name", backend_id),
-                "class": entry.get("class", "unclassified"),
+                "class": backend_class,
                 "enabled": bool(entry.get("enabled", False)),
                 "adapter_installed": installed is not None,
                 "capabilities": (installed or {}).get("capabilities", {}),
+                "description": (installed or {}).get("description") or CLASS_INFO.get(backend_class, ""),
+                "url": (installed or {}).get("url", ""),
             }
         )
     return described

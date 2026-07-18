@@ -93,6 +93,8 @@ def collect_viewer_data(cache_db: Path, audit_log: Path) -> dict[str, Any]:
             "routing_effective": {k: list(v) for k, v in effective_routing(config).items()},
             "reserved_classes": ["peer_reasoning", "knowledge_brain", "provenance_fabric"],
             "classes": list(__import__("memorycore.operator_config", fromlist=["BACKEND_CLASSES"]).BACKEND_CLASSES),
+            "class_info": __import__("memorycore.operator_config", fromlist=["CLASS_INFO"]).CLASS_INFO,
+            "memory_type_info": __import__("memorycore.operator_config", fromlist=["MEMORY_TYPE_INFO"]).MEMORY_TYPE_INFO,
             "config_path": str(config_path),
         },
     }
@@ -525,7 +527,12 @@ _TEMPLATE = r"""<!doctype html>
   .bk-card .top { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
   .bk-card .name { font-weight: 650; font-size: 13.5px; flex: 1; }
   .bk-card .cls { font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
-  .bk-card .caps { font-size: 11.5px; color: var(--ink-2); margin: 6px 0 10px; }
+  .bk-card .caps { font-size: 11.5px; color: var(--muted); margin: 4px 0 10px; }
+  .bk-card .desc { font-size: 11.5px; color: var(--ink-2); margin: 6px 0 2px; line-height: 1.45; }
+  .bk-card a.doc { font-size: 11.5px; color: var(--s1); text-decoration: none; }
+  .bk-card a.doc:hover { text-decoration: underline; }
+  [data-help] { cursor: help; }
+  .reserved-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; margin-top: 10px; }
   .toggle {
     font: inherit; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 999px;
     border: 1px solid var(--ring); cursor: pointer; background: var(--surface); color: var(--ink);
@@ -574,7 +581,7 @@ _TEMPLATE = r"""<!doctype html>
 </header>
 <div class="tiles" id="tiles"></div>
 <section id="controlplane" style="display:none">
-  <h2>Control plane <span style="color:var(--muted);font-weight:400">— every change leaves a receipt in the audit trail</span></h2>
+  <h2 data-help="Live, audited controls over the memory layer: enable or disable backends, edit routing, switch modes. Every change writes a receipt.">Control plane <span style="color:var(--muted);font-weight:400">— every change leaves a receipt in the audit trail</span></h2>
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
     <span style="font-size:12.5px;color:var(--ink-2)">Backend mode</span>
     <span class="seg" id="modeseg"></span>
@@ -582,7 +589,7 @@ _TEMPLATE = r"""<!doctype html>
   </div>
   <div class="ctl-grid" id="bkcards"></div>
   <div class="reserved" id="reserved"></div>
-  <h2 style="margin-top:18px">Routing matrix <span style="color:var(--muted);font-weight:400">— pointer flush targets; two checks on one row = mirroring</span></h2>
+  <h2 style="margin-top:18px" data-help="Which backends each memory type flushes to. Check two boxes on one row to mirror a type into two systems at once.">Routing matrix <span style="color:var(--muted);font-weight:400">— pointer flush targets; two checks on one row = mirroring</span></h2>
   <div style="overflow-x:auto"><table class="matrix" id="matrix"></table></div>
   <div class="ctl-note">Content write-through targets are fixed per type (local → JSONL, file_corpus → QMD, transcript → callback delivery); the matrix governs where pointer records flush.</div>
   <div class="ctl-actions" style="margin-top:14px">
@@ -590,11 +597,11 @@ _TEMPLATE = r"""<!doctype html>
     <button class="btn" id="btn-verify">Re-verify all stamps</button>
   </div>
   <div class="declare" id="declare"></div>
-  <h2 style="margin-top:18px">Configuration history <span style="color:var(--muted);font-weight:400">— who changed what, when</span></h2>
+  <h2 style="margin-top:18px" data-help="The settings' own audit trail: every toggle, routing edit, mode switch, reveal, and export, attributed and timestamped.">Configuration history <span style="color:var(--muted);font-weight:400">— who changed what, when</span></h2>
   <div id="cfghistory"></div>
 </section>
 <section>
-  <h2>Activity</h2>
+  <h2 data-help="How the memory layer is being used over time, from record timestamps and the audit trail.">Activity</h2>
   <div class="trend-grid">
     <div><h3 id="trend-mem-h">Memories over time</h3><div id="trend-mem"></div></div>
     <div><h3 id="trend-audit-h">Audit events per day</h3><div id="trend-audit"></div></div>
@@ -602,16 +609,16 @@ _TEMPLATE = r"""<!doctype html>
 </section>
 <div id="toast"></div>
 <section>
-  <h2>Verification states</h2>
+  <h2 data-help="Trust at a glance: verified = proven against source; stale = source changed since; missing = source gone; unknown = not yet provable. Never asserted, always checked.">Verification states</h2>
   <div class="stackbar" id="stackbar"></div>
   <div class="legend" id="vlegend"></div>
 </section>
 <section>
-  <h2>Memories by backend</h2>
+  <h2 data-help="Where memories physically live. Each backend is a different memory technology behind one contract.">Memories by backend</h2>
   <div class="bars" id="backendbars"></div>
 </section>
 <section>
-  <h2>Memory records <span style="color:var(--muted);font-weight:400">— click a row for its receipt</span></h2>
+  <h2 data-help="Every memory the cache knows: its pointer, hash, verification stamp, and delivery state. Click a row for the full receipt.">Memory records <span style="color:var(--muted);font-weight:400">— click a row for its receipt</span></h2>
   <div class="filters">
     <input type="text" id="mf-text" placeholder="search records…" oninput="renderAll()">
     <select id="mf-state" onchange="renderAll()"></select>
@@ -625,7 +632,7 @@ _TEMPLATE = r"""<!doctype html>
   </table>
 </section>
 <section>
-  <h2>Audit trail <span style="color:var(--muted);font-weight:400">— newest first, content-sparse by contract</span></h2>
+  <h2 data-help="Receipts for every operation — searches, writes, verifications, reveals, config changes. Content-sparse: pointers and hashes, never memory content.">Audit trail <span style="color:var(--muted);font-weight:400">— newest first, content-sparse by contract</span></h2>
   <div class="filters">
     <input type="text" id="af-text" placeholder="search audit…" oninput="renderAll()">
     <select id="af-op" onchange="renderAll()"></select>
@@ -663,16 +670,23 @@ document.getElementById("foot").textContent =
   `cache: ${DATA.cache_db} · audit: ${DATA.audit_log} · local-first, content-sparse — pointers and hashes only, never memory content`;
 
 const vc = DATA.verification_counts; records = DATA.records; const total = records.length;
+const STATE_HELP = {
+  verified: "Proven against the source: the content exists and its hash matches the receipt. Earned by a real check, never asserted.",
+  stale: "The source changed after this memory was recorded — its content no longer matches the stored hash. The memory may be outdated.",
+  missing: "The source is gone: the file or record this memory points to no longer exists. The pointer is honest about it.",
+  unsupported: "This backend cannot prove freshness for this record (yet). MemoryCore says so rather than guessing.",
+  unknown: "Not yet provable — the backend was unreachable or no check has run. Never presented as verified.",
+};
 const tiles = [
-  { label: "memories", value: total, dot: null },
-  { label: "verified", value: vc.verified || 0, dot: "var(--good)" },
-  { label: "stale", value: vc.stale || 0, dot: "var(--warning)" },
-  { label: "missing", value: vc.missing || 0, dot: "var(--serious)" },
-  { label: "unknown", value: (vc.unknown || 0) + (vc.unsupported || 0), dot: "var(--muted)" },
-  { label: "audit events", value: DATA.audit.length, dot: null },
+  { label: "memories", value: total, dot: null, help: "Every memory record the cache knows about, across all backends." },
+  { label: "verified", value: vc.verified || 0, dot: "var(--good)", help: STATE_HELP.verified },
+  { label: "stale", value: vc.stale || 0, dot: "var(--warning)", help: STATE_HELP.stale },
+  { label: "missing", value: vc.missing || 0, dot: "var(--serious)", help: STATE_HELP.missing },
+  { label: "unknown", value: (vc.unknown || 0) + (vc.unsupported || 0), dot: "var(--muted)", help: STATE_HELP.unknown + " Includes unsupported." },
+  { label: "audit events", value: DATA.audit.length, dot: null, help: "Receipts in the trail: one per operation — searches, writes, verifications, reveals, config changes." },
 ];
 document.getElementById("tiles").innerHTML = tiles.map(t =>
-  `<div class="tile"><div class="label">${t.dot ? `<span class="dot" style="background:${t.dot}"></span>` : ""}${t.label}</div>
+  `<div class="tile" data-help="${esc(t.help)}"><div class="label">${t.dot ? `<span class="dot" style="background:${t.dot}"></span>` : ""}${t.label}</div>
    <div class="value">${t.value}</div></div>`).join("");
 
 const sb = document.getElementById("stackbar");
@@ -686,7 +700,7 @@ sb.querySelectorAll(".seg").forEach(el => {
   el.onmouseleave = hideTip;
 });
 document.getElementById("vlegend").innerHTML = order.map(s =>
-  `<span class="item"><span class="dot" style="background:${V[s].color}"></span>${V[s].ic} ${s} · ${vc[s] || 0}</span>`).join("");
+  `<span class="item" data-help="${esc(STATE_HELP[s])}"><span class="dot" style="background:${V[s].color}"></span>${V[s].ic} ${s} · ${vc[s] || 0}</span>`).join("");
 
 const bc = DATA.backend_counts, maxB = Math.max(1, ...Object.values(bc));
 document.getElementById("backendbars").innerHTML = Object.keys(bc).length === 0 ?
@@ -759,6 +773,16 @@ document.getElementById("audit").innerHTML = DATA.audit.length === 0 ?
 
 renderControl();
 renderTrends();
+bindHelp();
+}
+
+function bindHelp() {
+  document.querySelectorAll("[data-help]").forEach(el => {
+    if (el._helpBound) return;
+    el._helpBound = true;
+    el.addEventListener("mousemove", e => showTip(e, esc(el.dataset.help)));
+    el.addEventListener("mouseleave", hideTip);
+  });
 }
 
 function syncSelect(id, allLabel, values) {
@@ -819,9 +843,13 @@ function renderControl() {
   sec.style.display = "";
 
   const envPinned = c.mode_source === "env";
+  const MODE_HELP = {
+    fixture: "Safe default: reads answer from synthetic fixture data; no live backend commands run. Contract behavior only.",
+    "live-local": "Real mode: QMD reads/writes/verification run against the actual local index. Still local-only — nothing leaves this machine.",
+  };
   document.getElementById("modeseg").innerHTML = ["fixture", "live-local"].map(m =>
     `<button class="${m === c.mode ? "active" : ""}" ${(!LIVE || envPinned) ? "disabled" : ""}
-      onclick="control('mode',{mode:'${m}'})">${m}</button>`).join("");
+      data-help="${esc(MODE_HELP[m])}" onclick="control('mode',{mode:'${m}'})">${m}</button>`).join("");
   document.getElementById("modenote").textContent =
     envPinned ? "pinned by MEMORYCORE_BACKEND_MODE env" : (LIVE ? "" : "controls require the live server");
 
@@ -830,18 +858,27 @@ function renderControl() {
       <div class="top">
         <span class="dot" style="background:${b.enabled && b.adapter_installed ? backendColor(b.backend_id) : "var(--muted)"}"></span>
         <span class="name">${esc(b.display_name)}</span>
-        <span class="cls">${esc(b.class)}</span>
+        <span class="cls" data-help="${esc(c.class_info[b.class] || b.class)}">${esc(b.class)}</span>
       </div>
+      <div class="desc">${esc(b.description || "")}</div>
       <div class="caps">${b.adapter_installed
         ? `verify: ${esc(String(b.capabilities.verify))} · content search: ${b.capabilities.content_search ? "yes" : "no"}`
         : "declared — no adapter installed"}</div>
-      <button class="toggle ${b.enabled ? "on" : "off"}" ${!LIVE ? "disabled" : ""}
-        onclick="control('backend',{backend_id:'${esc(b.backend_id)}',enabled:${!b.enabled}})">
-        ${b.enabled ? "enabled" : "disabled"}</button>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="toggle ${b.enabled ? "on" : "off"}" ${!LIVE ? "disabled" : ""}
+          data-help="${b.enabled ? "Disable: writes to this backend fail with an honest BACKEND_DISABLED error. The toggle itself is receipted." : "Enable this backend for routing and writes. The toggle itself is receipted."}"
+          onclick="control('backend',{backend_id:'${esc(b.backend_id)}',enabled:${!b.enabled}})">
+          ${b.enabled ? "enabled" : "disabled"}</button>
+        ${b.url ? `<a class="doc" href="${esc(b.url)}" target="_blank" rel="noopener">docs ↗</a>` : ""}
+      </div>
     </div>`).join("");
 
-  document.getElementById("reserved").textContent =
-    "Reserved for future systems: " + c.reserved_classes.join(" · ") + " — declare a backend entry to populate.";
+  document.getElementById("reserved").innerHTML =
+    `<div style="font-style:normal">Reserved for future memory systems — declare an entry below to populate:</div>
+     <div class="reserved-grid">${c.reserved_classes.map(cls => `
+       <div class="bk-card future"><div class="top"><span class="dot" style="background:var(--muted)"></span>
+         <span class="name" style="font-weight:600">${esc(cls)}</span></div>
+         <div class="desc">${esc((c.class_info[cls] || "").replace("Reserved: ", ""))}</div></div>`).join("")}</div>`;
 
   document.getElementById("declare").innerHTML = `
     <input type="text" id="dec-id" placeholder="backend id (slug)" ${!LIVE ? "disabled" : ""}>
@@ -864,8 +901,8 @@ function renderControl() {
   const backends = c.backends;
   const types = Object.keys(c.routing);
   document.getElementById("matrix").innerHTML =
-    `<tr><th>memory type</th>${backends.map(b => `<th>${esc(b.backend_id)}</th>`).join("")}</tr>` +
-    types.map(t => `<tr><td class="mono">${esc(t)}</td>${backends.map(b => {
+    `<tr><th data-help="Each memory type is a kind of remembering with its own natural home.">memory type</th>${backends.map(b => `<th data-help="${esc(b.description || b.backend_id)}">${esc(b.backend_id)}</th>`).join("")}</tr>` +
+    types.map(t => `<tr><td class="mono" data-help="${esc(c.memory_type_info[t] || t)}">${esc(t)}</td>${backends.map(b => {
       const checked = (c.routing[t] || []).includes(b.backend_id);
       return `<td><input type="checkbox" ${checked ? "checked" : ""} ${(!LIVE || !b.enabled) ? "disabled" : ""}
         onchange="routeChange('${esc(t)}')" data-t="${esc(t)}" data-b="${esc(b.backend_id)}"></td>`;
