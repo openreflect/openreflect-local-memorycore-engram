@@ -89,12 +89,62 @@ MEMORY_TYPE_INFO: dict[str, str] = {
     "knowledge": "Curated knowledge: pages captured into gbrain through its sanctioned capture entrance, with slug and hash receipts.",
 }
 
+# Declared by default: the memory landscape every install can see. These are
+# NOT installed adapters — they render as future cards, start disabled, and
+# enabling one is an operator decision that requires configuration (they are
+# remote or externally hosted services; content leaves the machine only by
+# explicit choice). Adapter implementations land per service (EN-036 track).
+DECLARED_BY_DEFAULT: dict[str, dict[str, Any]] = {
+    "vertex_memory_bank": {
+        "class": "peer_reasoning",
+        "display_name": "Vertex AI Memory Bank",
+        "description": "Google Cloud managed extractive memory (Agent Engine Memory Bank): service-side fact generation from conversations, user-scoped, similarity retrieval. Remote managed service — enable only with GCP credentials.",
+        "url": "https://cloud.google.com/vertex-ai/generative-ai/docs/agent-engine/memory-bank/overview",
+    },
+    "agentcore_memory": {
+        "class": "peer_reasoning",
+        "display_name": "AWS AgentCore Memory",
+        "description": "Amazon Bedrock AgentCore Memory: managed short- and long-term agent memory with extraction strategies and user/session scoping. Remote managed service — enable only with AWS credentials.",
+        "url": "https://aws.amazon.com/bedrock/agentcore/",
+    },
+    "mem0": {
+        "class": "peer_reasoning",
+        "display_name": "mem0",
+        "description": "Open-source and hosted extractive memory layer: LLM fact extraction with user/agent scoping and similarity retrieval. Self-hostable or managed.",
+        "url": "https://github.com/mem0ai/mem0",
+    },
+    "zep": {
+        "class": "peer_reasoning",
+        "display_name": "Zep",
+        "description": "Temporal knowledge-graph memory for agents: extracted facts with validity intervals, user scoping, hybrid retrieval.",
+        "url": "https://github.com/getzep/zep",
+    },
+    "letta": {
+        "class": "peer_reasoning",
+        "display_name": "Letta (MemGPT)",
+        "description": "Agent runtime with self-editing hierarchical memory blocks and archival recall; self-hostable or cloud.",
+        "url": "https://github.com/letta-ai/letta",
+    },
+    "honcho": {
+        "class": "peer_reasoning",
+        "display_name": "Honcho",
+        "description": "Plastic Labs' peer/session reasoning memory: theory-of-mind user modeling per peer. The register's canonical peer_reasoning example, now declared.",
+        "url": "https://github.com/plastic-labs/honcho",
+    },
+}
+
 DEFAULT_CONFIG: dict[str, Any] = {
     "schema_version": SCHEMA_VERSION,
     "mode": "fixture",
     "backends": {
-        backend_id: {"enabled": True, "class": spec["class"], "display_name": spec["display_name"]}
-        for backend_id, spec in INSTALLED_ADAPTERS.items()
+        **{
+            backend_id: {"enabled": True, "class": spec["class"], "display_name": spec["display_name"]}
+            for backend_id, spec in INSTALLED_ADAPTERS.items()
+        },
+        **{
+            backend_id: {"enabled": False, "class": spec["class"], "display_name": spec["display_name"]}
+            for backend_id, spec in DECLARED_BY_DEFAULT.items()
+        },
     },
     "routing": {
         "local": ["jsonl_store"],
@@ -148,6 +198,7 @@ def describe_backends(config: dict[str, Any]) -> list[dict[str, Any]]:
     described = []
     for backend_id, entry in config.get("backends", {}).items():
         installed = INSTALLED_ADAPTERS.get(backend_id)
+        declared = DECLARED_BY_DEFAULT.get(backend_id)
         backend_class = entry.get("class", "unclassified")
         described.append(
             {
@@ -157,8 +208,8 @@ def describe_backends(config: dict[str, Any]) -> list[dict[str, Any]]:
                 "enabled": bool(entry.get("enabled", False)),
                 "adapter_installed": installed is not None,
                 "capabilities": (installed or {}).get("capabilities", {}),
-                "description": (installed or {}).get("description") or CLASS_INFO.get(backend_class, ""),
-                "url": (installed or {}).get("url", ""),
+                "description": (installed or declared or {}).get("description") or CLASS_INFO.get(backend_class, ""),
+                "url": (installed or declared or {}).get("url", ""),
             }
         )
     return described

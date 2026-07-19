@@ -53,6 +53,18 @@ def main() -> int:
             # Defaults: no config file behaves exactly like the built-ins.
             require(resolve_backend_mode() == "fixture", "default mode changed")
 
+            # EN-036: the memory landscape ships declared by default —
+            # visible, disabled, honestly adapterless until configured.
+            from memorycore.operator_config import DECLARED_BY_DEFAULT, describe_backends, load_config
+            defaults = {b["backend_id"]: b for b in describe_backends(load_config(config_path))}
+            for declared_id in ("vertex_memory_bank", "agentcore_memory", "mem0", "zep", "letta", "honcho"):
+                require(declared_id in defaults, f"{declared_id} missing from default declarations")
+                entry = defaults[declared_id]
+                require(entry["enabled"] is False, f"{declared_id} must ship disabled")
+                require(entry["adapter_installed"] is False, f"{declared_id} must be honest about no adapter")
+                require(entry["description"] and entry["url"], f"{declared_id} needs description and docs url")
+            require(set(DECLARED_BY_DEFAULT) <= set(defaults), "declared set drifted from defaults")
+
             # Toggle jsonl_store off: writes are refused honestly, with a receipt.
             out = handle_control("backend", {"backend_id": "jsonl_store", "enabled": False}, **ctl)
             require(out["status"] == "ok", "backend toggle failed")
