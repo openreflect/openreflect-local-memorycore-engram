@@ -93,6 +93,14 @@ EXPECTED_TOOLS: dict[str, dict[str, Any]] = {
             "client": {"type": "string", "enum": ["mcp", "openclaw"], "default": "mcp"},
         },
     },
+    "memorycore_fanout_search": {
+        "required": ["query"],
+        "properties": {
+            "query": {"type": "string", "minLength": 1},
+            "limit": {"type": "integer", "minimum": 1, "maximum": 50, "default": 10},
+            "client": {"type": "string", "enum": ["mcp", "openclaw"], "default": "mcp"},
+        },
+    },
     "memorycore_flush": {
         "required": [],
         "properties": {

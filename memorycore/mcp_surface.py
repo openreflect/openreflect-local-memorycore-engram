@@ -76,6 +76,7 @@ CACHE_TOOL_NAMES = frozenset(
         "memorycore_remember",
         "memorycore_recall",
         "memorycore_cache_search",
+        "memorycore_fanout_search",
         "memorycore_flush",
         "memorycore_confirm_delivery",
     }
@@ -190,6 +191,20 @@ TOOL_DEFINITIONS: tuple[dict[str, Any], ...] = (
         },
     },
     {
+        "name": "memorycore_fanout_search",
+        "description": "EN-021 attributed multi-backend recall: one query fans out to every lane that can answer (cache index, JSONL content, live QMD index) and merges results with per-item backend attribution, verification state, and cross-lane corroboration. Lanes that cannot run say so explicitly.",
+        "input_schema": {
+            "type": "object",
+            "required": ["query"],
+            "additionalProperties": False,
+            "properties": {
+                "query": {"type": "string", "minLength": 1},
+                "limit": {"type": "integer", "minimum": 1, "maximum": 50, "default": 10},
+                "client": {"type": "string", "enum": ["mcp", "openclaw"], "default": "mcp"},
+            },
+        },
+    },
+    {
         "name": "memorycore_flush",
         "description": "Flush pending cached records to their routed backends (fixture-only handlers).",
         "input_schema": {
@@ -274,6 +289,7 @@ def _cache_request_from_tool(tool_name: str, arguments: dict[str, Any]) -> dict[
         "remember": "cache_write",
         "recall": "cache_read",
         "cache_search": "cache_search",
+        "fanout_search": "fanout_search",
         "flush": "cache_flush",
         "confirm_delivery": "cache_confirm",
     }
@@ -328,6 +344,21 @@ def _execute_cache_request(
                     item["snippet"] = hit.get("content", "")[:200]
                     items.append(item)
             return _ok_cache_result(request, items[:limit])
+        if operation == "fanout_search":
+            from memorycore.fanout import fanout_search
+
+            fan = fanout_search(
+                arguments["query"],
+                store=store,
+                config=load_config(operator_config_path()),
+                mode=resolve_backend_mode(),
+                jsonl_store_path=_jsonl_store_path(),
+                limit=int(arguments.get("limit", 10)),
+            )
+            result = _ok_cache_result(request, fan["results"])
+            return {**result, "lanes": fan["lanes"],
+                    "merge_contract_version": fan["merge_contract_version"],
+                    "total_before_limit": fan["total_before_limit"]}
         if operation == "cache_flush":
             routing = effective_routing(load_config(operator_config_path()))
             flushed = flush_pending(store, FIXTURE_FLUSH_BACKENDS, timestamp=_timestamp(), routing=routing)

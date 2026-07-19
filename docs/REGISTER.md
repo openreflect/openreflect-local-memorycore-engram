@@ -27,7 +27,7 @@ Stable = UCXM has no − and no ?. Scores are lazy and must carry reasons.
 | EN-018 | Real backend-proof verification | GAP-001 | built | +00+ | scripts/validate_mvp_real_verify.py | U: core freshness promise; M: deterministic CLI read-back; proven on real index 2026-07-05 |
 | EN-019 | LCM callback write transport | RISK-001 | built | +000 | scripts/validate_mvp_callback_delivery.py | U: unlocks transcript writes; delivery instruction + confirm tool, simulated executor validated |
 | EN-020 | JSONL local file backend | EN-013 | built | | scripts/validate_mvp_jsonl_backend.py | zero-dependency third backend; memory_type local, write-through + hash verify in every mode; git-native provenance candidate |
-| EN-021 | Attributed multi-backend recall | EN-013 | concept | | docs/CACHING_MEMORY_ROUTER.md | router becomes synthesizer: fan-out reads, attributed merge; design merge contract before OG-003 envelope freezes |
+| EN-021 | Attributed multi-backend recall | EN-013 | built | +00+ | scripts/validate_mvp_fanout.py | U: the read-side product — one query, every lane, attributed merge; M: deterministic merge and lane honesty; corroboration proven live across cache+jsonl+qmd 2026-07-19 |
 | RISK-001 | LCM bridge cannot cross MCP | EN-009 | superseded | | docs/AGENT_CONTEXT.md | resolved by EN-019 callback decision |
 | RISK-002 | Failed write-through drops content | EN-016 | concept | | docs/adr/0005-transient-content-write-through.md | by design; spool fallback if painful |
 | RISK-003 | OpenClaw smoke awaits approval | EN-011 | superseded | | docs/evals/EVAL-012_OPENCLAW_SMOKE_RUN_NOTE.md | hard stop lifted 2026-07-17; staged glasshouse execution recorded in run note |
@@ -75,8 +75,8 @@ Stable = UCXM has no − and no ?. Scores are lazy and must carry reasons.
 | IDEA-012 | Cost token diagnostics | EN-012 | idea | | | per-backend contribution views |
 | IDEA-013 | Register IDs as provenance anchors | EN-006 | idea | | | memory records cite EN rows |
 | IDEA-014 | Indexing transcript reasoning engines | — | idea | | | separate product layer per spec |
-| IDEA-015 | Fan-out parallel recall | EN-021 | idea | | | one query, all capable backends |
-| IDEA-016 | Attributed merge contract | EN-021 | idea | | | per-item backend, pointer, verification, relevance |
+| IDEA-015 | Fan-out parallel recall | EN-021 | idea | | | graduated to EN-021 (fanout.py lanes) |
+| IDEA-016 | Attributed merge contract | EN-021 | idea | | | graduated to EN-021 (merge_contract_version 1) |
 | IDEA-017 | Cross-backend identity mapping | EN-021 | idea | | | mirrored records recognized as one memory |
 | IDEA-018 | Pending-state toasts | EN-026 | idea | | | built: immediate working toast replaced by result (issue #3) |
 | IDEA-019 | Receipt-backed backend benchmarking | EN-007 | idea | | | per-backend latency, verification pass rate, staleness rate, flush failures from lived audit traffic; comparative scorecards across memory systems |

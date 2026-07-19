@@ -164,6 +164,14 @@ def _register_tools(server: Any) -> None:
         return _call_surface("memorycore_cache_search", arguments)
 
     @server.tool(
+        name="memorycore_fanout_search",
+        description=by_name["memorycore_fanout_search"]["description"],
+        structured_output=False,
+    )
+    def memorycore_fanout_search(query: str, limit: int = 10, client: str = "mcp") -> dict[str, Any]:
+        return _call_surface("memorycore_fanout_search", {"query": query, "limit": limit, "client": client})
+
+    @server.tool(
         name="memorycore_flush",
         description=by_name["memorycore_flush"]["description"],
         structured_output=False,

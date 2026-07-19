@@ -98,9 +98,9 @@ not private content.
   records only.
 - Cross-backend identity mapping beyond the pointer fields above.
 
-## Direction: attributed multi-backend recall (EN-021)
+## Attributed multi-backend recall (EN-021 — BUILT 2026-07-19)
 
-Adopted direction 2026-07-16: MemoryCore evolves from a switch (pick one
+Adopted 2026-07-16, built as memorycore/fanout.py (memorycore_fanout_search, merge contract v1): MemoryCore evolves from a switch (pick one
 backend per intent) toward a synthesizer — consult multiple memory
 technologies simultaneously and merge results with per-item attribution.
 
