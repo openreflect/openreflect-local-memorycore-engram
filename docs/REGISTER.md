@@ -82,3 +82,4 @@ Stable = UCXM has no − and no ?. Scores are lazy and must carry reasons.
 | IDEA-019 | Receipt-backed backend benchmarking | EN-007 | idea | | | per-backend latency, verification pass rate, staleness rate, flush failures from lived audit traffic; comparative scorecards across memory systems |
 | IDEA-020 | Agent-driven backend discovery | EN-032 | idea | | | LLM scans npm/GitHub for memory-shaped systems, classifies into backend classes, proposes declarations for operator approval |
 | IDEA-021 | Agent-assisted adapter onboarding | EN-035 | idea | | | agent drafts adapter contract, fixtures, and validator from a discovered system's write model — the gbrain loop, automated |
+| IDEA-022 | External benchmark aggregation | IDEA-019 | idea | | | pull published memory benchmarks online and merge with receipt-backed local metrics; every number attributed: source, date, methodology, published-claim vs locally-verified |
