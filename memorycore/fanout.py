@@ -130,6 +130,7 @@ def fanout_search(
     for backend_id, reason in (
         ("lossless_claw", "no host bridge on this surface (ADR-0006 callback is write-side)"),
         ("gbrain", "live search not wired yet (EN-035 next inch)"),
+        ("vertex_memory_bank", "live retrieval requires configured GCP credentials (EN-037 next inch)"),
     ):
         status = "disabled" if not backend_enabled(config, backend_id) else "unavailable"
         lanes.append({"lane": f"{backend_id}_search", "backend_id": backend_id,

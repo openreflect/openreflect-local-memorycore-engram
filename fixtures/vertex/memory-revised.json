@@ -1,0 +1,9 @@
+{
+  "memory": {
+    "name": "projects/fixture-project/locations/us-central1/reasoningEngines/4408183834/memories/mem-alpha-0001",
+    "fact": "The user prefers concise summaries with receipts, and now also wants trend charts.",
+    "source": "generated",
+    "scope": {"user_id": "fixture-user"},
+    "updateTime": "2026-07-19T06:00:00Z"
+  }
+}

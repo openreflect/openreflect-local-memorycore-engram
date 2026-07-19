@@ -57,13 +57,19 @@ def main() -> int:
             # visible, disabled, honestly adapterless until configured.
             from memorycore.operator_config import DECLARED_BY_DEFAULT, describe_backends, load_config
             defaults = {b["backend_id"]: b for b in describe_backends(load_config(config_path))}
-            for declared_id in ("vertex_memory_bank", "agentcore_memory", "mem0", "zep", "letta", "honcho"):
+            for declared_id in ("agentcore_memory", "mem0", "zep", "letta", "honcho"):
                 require(declared_id in defaults, f"{declared_id} missing from default declarations")
                 entry = defaults[declared_id]
                 require(entry["enabled"] is False, f"{declared_id} must ship disabled")
                 require(entry["adapter_installed"] is False, f"{declared_id} must be honest about no adapter")
                 require(entry["description"] and entry["url"], f"{declared_id} needs description and docs url")
             require(set(DECLARED_BY_DEFAULT) <= set(defaults), "declared set drifted from defaults")
+
+            # EN-037: vertex graduated to an installed adapter but stays
+            # disabled by default — it is a remote service, and content
+            # leaves the machine only by explicit operator choice.
+            require(defaults["vertex_memory_bank"]["adapter_installed"] is True, "vertex adapter should be installed")
+            require(defaults["vertex_memory_bank"]["enabled"] is False, "vertex must still ship disabled")
 
             # Toggle jsonl_store off: writes are refused honestly, with a receipt.
             out = handle_control("backend", {"backend_id": "jsonl_store", "enabled": False}, **ctl)
@@ -190,6 +196,8 @@ def main() -> int:
             require(reset_cfg["mode"] == "fixture", "reset should restore fixture mode")
             require(all(reset_cfg["backends"][b]["enabled"] for b in ("jsonl_store", "qmd", "lossless_claw", "gbrain")),
                     "reset should enable installed backends")
+            require(reset_cfg["backends"]["vertex_memory_bank"]["enabled"] is False,
+                    "reset must keep the remote vertex backend disabled")
             require("honcho" in reset_cfg["backends"] and reset_cfg["backends"]["honcho"]["enabled"] is False,
                     "reset must preserve declared backends, disabled")
             require("notion_probe" in reset_cfg["backends"] and reset_cfg["backends"]["notion_probe"]["enabled"] is False,

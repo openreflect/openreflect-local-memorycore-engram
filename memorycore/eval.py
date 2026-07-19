@@ -46,6 +46,7 @@ PUBLIC_SAFE_EVALS = (
     EvalSpec("MEMORYCORE_VIEWER", ("scripts/validate_mvp_viewer.py",)),
     EvalSpec("MEMORYCORE_OPERATOR_CONSOLE", ("scripts/validate_mvp_operator_console.py",)),
     EvalSpec("MEMORYCORE_GBRAIN_ADAPTER", ("scripts/validate_mvp_gbrain_adapter.py",)),
+    EvalSpec("MEMORYCORE_VERTEX_ADAPTER", ("scripts/validate_mvp_vertex_adapter.py",)),
     EvalSpec("MEMORYCORE_FANOUT", ("scripts/validate_mvp_fanout.py",)),
     EvalSpec("MEMORYCORE_E2E_GOLDEN_PATH", ("scripts/validate_e2e_golden_path.py",)),
 )

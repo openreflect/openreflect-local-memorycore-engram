@@ -71,13 +71,24 @@ INSTALLED_ADAPTERS: dict[str, dict[str, Any]] = {
         "description": "Garry's opinionated agent knowledge brain: page-level memory with schema packs, timelines, and ingest logs. Writes go through the sanctioned gbrain capture entrance, which reports slug, status, and content hash.",
         "url": "https://github.com/garrytan/gbrain",
     },
+    "vertex_memory_bank": {
+        "class": "peer_reasoning",
+        "display_name": "Vertex AI Memory Bank",
+        # Remote managed service: the adapter is installed (EN-037) but the
+        # backend ships disabled — content leaves the machine only by
+        # explicit operator choice, with GCP credentials configured.
+        "default_enabled": False,
+        "capabilities": {"read": True, "write_through": "generate", "verify": "hash-at-observation", "content_search": False},
+        "description": "Google Cloud managed extractive memory (Agent Engine Memory Bank): service-side fact generation from conversations, user-scoped, similarity retrieval, and immutable per-mutation revisions with rollback — the strongest provenance primitive surveyed (IDEA-023). Adapter installed (EN-037); remote service, ships disabled until GCP credentials are configured.",
+        "url": "https://cloud.google.com/vertex-ai/generative-ai/docs/agent-engine/memory-bank/overview",
+    },
 }
 
 CLASS_INFO: dict[str, str] = {
     "local_record": "Durable local notes: fast, hash-proofed, no external dependencies.",
     "corpus_index": "Semantic search over document collections: memories as indexed files.",
     "transcript_continuity": "Conversation history: ordered messages, summaries, session context.",
-    "peer_reasoning": "Reserved: per-person/agent insight memory — what each peer knows and wants (e.g. Honcho).",
+    "peer_reasoning": "Per-person/agent insight memory: extracted, user-scoped facts about what each peer knows and wants (Vertex Memory Bank, Honcho).",
     "knowledge_brain": "Reserved: curated knowledge pages with write-through capture (e.g. gbrain).",
     "provenance_fabric": "Reserved: external substrates as governed memory — Notion, Drive, S3, filesystems.",
 }
@@ -87,6 +98,7 @@ MEMORY_TYPE_INFO: dict[str, str] = {
     "file_corpus": "Document-shaped memories: materialized as markdown files and semantically indexed by QMD.",
     "transcript": "Conversation moments: delivered into Lossless-Claw via the ADR-0006 callback transport.",
     "knowledge": "Curated knowledge: pages captured into gbrain through its sanctioned capture entrance, with slug and hash receipts.",
+    "peer": "Per-person insight: user-scoped facts routed to Vertex AI Memory Bank, hash-stamped at observation; the service extracts and consolidates, MemoryCore keeps the receipt. Remote — requires the backend to be enabled.",
 }
 
 # Declared by default: the memory landscape every install can see. These are
@@ -95,12 +107,6 @@ MEMORY_TYPE_INFO: dict[str, str] = {
 # remote or externally hosted services; content leaves the machine only by
 # explicit choice). Adapter implementations land per service (EN-036 track).
 DECLARED_BY_DEFAULT: dict[str, dict[str, Any]] = {
-    "vertex_memory_bank": {
-        "class": "peer_reasoning",
-        "display_name": "Vertex AI Memory Bank",
-        "description": "Google Cloud managed extractive memory (Agent Engine Memory Bank): service-side fact generation from conversations, user-scoped, similarity retrieval. Remote managed service — enable only with GCP credentials.",
-        "url": "https://cloud.google.com/vertex-ai/generative-ai/docs/agent-engine/memory-bank/overview",
-    },
     "agentcore_memory": {
         "class": "peer_reasoning",
         "display_name": "AWS AgentCore Memory",
@@ -138,7 +144,11 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "mode": "fixture",
     "backends": {
         **{
-            backend_id: {"enabled": True, "class": spec["class"], "display_name": spec["display_name"]}
+            backend_id: {
+                "enabled": spec.get("default_enabled", True),
+                "class": spec["class"],
+                "display_name": spec["display_name"],
+            }
             for backend_id, spec in INSTALLED_ADAPTERS.items()
         },
         **{
@@ -151,6 +161,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "file_corpus": ["qmd"],
         "transcript": ["lossless_claw"],
         "knowledge": ["gbrain"],
+        "peer": ["vertex_memory_bank"],
     },
 }
 

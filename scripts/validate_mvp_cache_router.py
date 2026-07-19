@@ -97,7 +97,7 @@ def main() -> int:
             try:
                 cache_write(
                     store,
-                    {"memory_type": "peer", "content_ref": "peer_fixture_001"},
+                    {"memory_type": "telepathy", "content_ref": "telepathy_fixture_001"},
                     timestamp=TIMESTAMP,
                 )
                 raise ValueError("Unroutable memory type was accepted by the cache")

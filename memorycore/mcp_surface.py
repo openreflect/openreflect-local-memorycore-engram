@@ -52,6 +52,7 @@ FIXTURE_FLUSH_BACKENDS = {
     "lossless_claw": lambda record: {"status": "ok"},
     "jsonl_store": lambda record: {"status": "ok"},
     "gbrain": lambda record: {"status": "ok"},
+    "vertex_memory_bank": lambda record: {"status": "ok"},
     "mock_healthy": lambda record: {"status": "ok"},
 }
 
@@ -148,7 +149,7 @@ TOOL_DEFINITIONS: tuple[dict[str, Any], ...] = (
             "required": ["memory_type"],
             "additionalProperties": False,
             "properties": {
-                "memory_type": {"type": "string", "enum": ["file_corpus", "transcript", "local", "knowledge"]},
+                "memory_type": {"type": "string", "enum": ["file_corpus", "transcript", "local", "knowledge", "peer"]},
                 "content_ref": {"type": "string", "minLength": 1},
                 "content": {"type": "string", "minLength": 1},
                 "pointer_id": {"type": "string", "minLength": 1},
@@ -184,7 +185,7 @@ TOOL_DEFINITIONS: tuple[dict[str, Any], ...] = (
             "additionalProperties": False,
             "properties": {
                 "query": {"type": "string", "minLength": 1},
-                "memory_type": {"type": "string", "enum": ["file_corpus", "transcript", "local", "knowledge"]},
+                "memory_type": {"type": "string", "enum": ["file_corpus", "transcript", "local", "knowledge", "peer"]},
                 "limit": {"type": "integer", "minimum": 1, "maximum": 50, "default": 5},
                 "client": {"type": "string", "enum": ["mcp", "openclaw"], "default": "mcp"},
             },
@@ -512,6 +513,10 @@ def _content_write_through(request: dict[str, Any], arguments: dict[str, Any], s
         if not backend_enabled(config, "gbrain"):
             return _operator_disabled_error(request, "gbrain")
         return _gbrain_write_through(request, arguments, store)
+    if memory_type == "peer":
+        if not backend_enabled(config, "vertex_memory_bank"):
+            return _operator_disabled_error(request, "vertex_memory_bank")
+        return _vertex_write_through(request, arguments, store)
     if memory_type != "file_corpus":
         if not backend_enabled(config, "lossless_claw"):
             return _operator_disabled_error(request, "lossless_claw")
@@ -656,6 +661,58 @@ def _gbrain_write_through(request: dict[str, Any], arguments: dict[str, Any], st
 
     result = _ok_cache_result(request, [_cache_item(record)])
     return {**result, "selected_backend": "gbrain", "write_mode": "fixture-only"}
+
+
+def _vertex_write_through(request: dict[str, Any], arguments: dict[str, Any], store: CacheStore) -> dict[str, Any]:
+    """EN-037: peer memories route to Vertex AI Memory Bank.
+
+    Fixture mode synthesizes the generate receipt shape (stable resource-name
+    pointer + hash-at-observation) disclosed as fixture-only. Live-local
+    degrades honestly until the GCP client boundary is wired with configured
+    credentials — no remote calls are guessed, and content never leaves the
+    machine without explicit operator setup.
+    """
+    if resolve_backend_mode() == "live-local":
+        return {
+            "request_id": request["request_id"],
+            "operation": request["operation"],
+            "status": "error",
+            "results": [],
+            "verification_state": "unknown",
+            "error": {
+                "code": "BACKEND_UNAVAILABLE",
+                "category": "backend_unavailable",
+                "message": "Live Memory Bank calls require configured GCP credentials (EN-037 next inch); fixture mode proves the contract.",
+                "details": {"backend_id": "vertex_memory_bank"},
+            },
+        }
+
+    content = arguments["content"]
+    timestamp = _timestamp()
+    memory_id = "memory-" + hashlib.sha256(f"{content}{timestamp}".encode()).hexdigest()[:16]
+    from memorycore.vertex_adapter import fact_hash, vertex_pointer
+
+    memory_name = (
+        "projects/fixture-project/locations/us-central1/"
+        f"reasoningEngines/fixture/memories/{memory_id}"
+    )
+    record = cache_write(
+        store,
+        {
+            "memory_type": "peer",
+            "content_ref": memory_name,
+            "source_pointer": vertex_pointer(memory_name),
+            "verification": "unknown",
+            "content_hash": fact_hash(content),
+        },
+        timestamp=timestamp,
+    )
+    record["flush_state"] = "flushed"
+    record["updated_at"] = timestamp
+    store.upsert(record)
+
+    result = _ok_cache_result(request, [_cache_item(record)])
+    return {**result, "selected_backend": "vertex_memory_bank", "write_mode": "fixture-only"}
 
 
 def _callback_delivery_instruction(request: dict[str, Any], arguments: dict[str, Any], store: CacheStore) -> dict[str, Any]:

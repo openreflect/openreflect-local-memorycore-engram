@@ -354,8 +354,11 @@ def handle_control(
 
         def mutate(cfg: dict[str, Any]) -> None:
             for backend_id, entry in cfg["backends"].items():
-                entry["enabled"] = backend_id in INSTALLED_ADAPTERS
-                if backend_id not in INSTALLED_ADAPTERS:
+                spec = INSTALLED_ADAPTERS.get(backend_id)
+                # Remote adapters ship default_enabled=False; reset must never
+                # switch a remote backend on as a side effect.
+                entry["enabled"] = bool(spec) and spec.get("default_enabled", True)
+                if spec is None:
                     preserved.append(backend_id)
             cfg["routing"] = {k: list(v) for k, v in DEFAULT_CONFIG["routing"].items()}
             cfg["mode"] = DEFAULT_CONFIG["mode"]
@@ -495,7 +498,7 @@ _TEMPLATE = r"""<!doctype html>
     --muted: #898781; --grid: #e1e0d9; --baseline: #c3c2b7;
     --ring: rgba(11,11,11,0.10);
     --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --critical: #d03b3b;
-    --s1: #2a78d6; --s2: #008300; --s3: #e87ba4; --s4: #eda100;
+    --s1: #2a78d6; --s2: #008300; --s3: #e87ba4; --s4: #eda100; --s5: #12a594;
   }
   @media (prefers-color-scheme: dark) {
     :root:where(:not([data-theme="light"])) {
@@ -503,7 +506,7 @@ _TEMPLATE = r"""<!doctype html>
       --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7;
       --muted: #898781; --grid: #2c2c2a; --baseline: #383835;
       --ring: rgba(255,255,255,0.10);
-      --s1: #3987e5; --s2: #008300; --s3: #d55181; --s4: #c98500;
+      --s1: #3987e5; --s2: #008300; --s3: #d55181; --s4: #c98500; --s5: #0f9184;
     }
   }
   :root[data-theme="dark"] {
@@ -511,7 +514,7 @@ _TEMPLATE = r"""<!doctype html>
     --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7;
     --muted: #898781; --grid: #2c2c2a; --baseline: #383835;
     --ring: rgba(255,255,255,0.10);
-    --s1: #3987e5; --s2: #008300; --s3: #d55181; --s4: #c98500;
+    --s1: #3987e5; --s2: #008300; --s3: #d55181; --s4: #c98500; --s5: #0f9184;
   }
   * { box-sizing: border-box; margin: 0; }
   body {
@@ -716,7 +719,7 @@ const V = {
   unsupported:{ color: "var(--critical)", ic: "⊘", label: "unsupported" },
   unknown:    { color: "var(--muted)",    ic: "?", label: "unknown" },
 };
-const BACKEND_SLOT = { qmd: "var(--s1)", lossless_claw: "var(--s2)", jsonl_store: "var(--s3)", gbrain: "var(--s4)" };
+const BACKEND_SLOT = { qmd: "var(--s1)", lossless_claw: "var(--s2)", jsonl_store: "var(--s3)", gbrain: "var(--s4)", vertex_memory_bank: "var(--s5)" };
 const backendColor = b => BACKEND_SLOT[b] || "var(--muted)";
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const badge = state => { const v = V[state] || V.unknown;

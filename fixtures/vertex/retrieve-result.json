@@ -1,0 +1,24 @@
+{
+  "retrievedMemories": [
+    {
+      "memory": {
+        "name": "projects/fixture-project/locations/us-central1/reasoningEngines/4408183834/memories/mem-alpha-0001",
+        "fact": "The user prefers concise summaries with receipts over long narratives.",
+        "source": "generated",
+        "scope": {"user_id": "fixture-user"},
+        "updateTime": "2026-07-19T00:00:00Z"
+      },
+      "distance": 0.12
+    },
+    {
+      "memory": {
+        "name": "projects/fixture-project/locations/us-central1/reasoningEngines/4408183834/memories/mem-gamma-0003",
+        "fact": "The user asked to be addressed as Mitchell in fixture conversations.",
+        "source": "explicit",
+        "scope": {"user_id": "fixture-user"},
+        "updateTime": "2026-07-19T00:00:00Z"
+      },
+      "distance": 0.41
+    }
+  ]
+}
