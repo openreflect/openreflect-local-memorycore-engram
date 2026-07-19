@@ -79,3 +79,6 @@ Stable = UCXM has no − and no ?. Scores are lazy and must carry reasons.
 | IDEA-016 | Attributed merge contract | EN-021 | idea | | | per-item backend, pointer, verification, relevance |
 | IDEA-017 | Cross-backend identity mapping | EN-021 | idea | | | mirrored records recognized as one memory |
 | IDEA-018 | Pending-state toasts | EN-026 | idea | | | built: immediate working toast replaced by result (issue #3) |
+| IDEA-019 | Receipt-backed backend benchmarking | EN-007 | idea | | | per-backend latency, verification pass rate, staleness rate, flush failures from lived audit traffic; comparative scorecards across memory systems |
+| IDEA-020 | Agent-driven backend discovery | EN-032 | idea | | | LLM scans npm/GitHub for memory-shaped systems, classifies into backend classes, proposes declarations for operator approval |
+| IDEA-021 | Agent-assisted adapter onboarding | EN-035 | idea | | | agent drafts adapter contract, fixtures, and validator from a discovered system's write model — the gbrain loop, automated |
