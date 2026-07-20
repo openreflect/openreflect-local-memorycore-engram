@@ -119,7 +119,7 @@ TOOL_DEFINITIONS: tuple[dict[str, Any], ...] = (
     },
     {
         "name": "memorycore_verify",
-        "description": "Verify a cached record against real source state by record_id: jsonl_store records get REAL hash-based verification in every mode; qmd records in live-local mode. Real verdicts update the cached stamp. The pointer_id+state form is the fixture contract only and echoes the asserted state.",
+        "description": "Verify a cached record against real source state by record_id: jsonl_store records get REAL hash-based verification in every mode; qmd and vertex_memory_bank records in live-local mode. Real verdicts update the cached stamp. The pointer_id+state form is the fixture contract only and echoes the asserted state.",
         "input_schema": {
             "type": "object",
             "additionalProperties": False,
@@ -459,6 +459,40 @@ def _verify_cached_record(arguments: dict[str, Any], cache_db: Path) -> dict[str
                 "verification_state": state,
             }
 
+        if backend_id == "vertex_memory_bank" and resolve_backend_mode() == "live-local":
+            from memorycore.vertex_adapter import vertex_verify
+            from memorycore.vertex_client import VertexClientError, engine_name, live_get_memory
+
+            engine = engine_name(load_config(operator_config_path()))
+            if engine:
+                try:
+                    memory = live_get_memory(record["source_pointer"].get("pointer_id", ""), engine=engine)
+                except VertexClientError as exc:
+                    return {
+                        **request,
+                        "status": "error",
+                        "results": [],
+                        "verification_state": "unknown",
+                        "error": {
+                            "code": "BACKEND_UNAVAILABLE",
+                            "category": "backend_unavailable",
+                            "message": str(exc),
+                            "verification_state": "unknown",
+                        },
+                    }
+                result = vertex_verify(
+                    request,
+                    {"memory": memory or {}},
+                    expected_hash=record.get("content_hash") or None,
+                )
+                state = result.get("verification_state", "unknown")
+                record["verification"] = state
+                record["updated_at"] = _timestamp()
+                store.upsert(record)
+                if result.get("results"):
+                    result["results"][0]["record_id"] = record["record_id"]
+                return result
+
         if resolve_backend_mode() != "live-local" or backend_id != "qmd":
             return {
                 **request,
@@ -468,7 +502,7 @@ def _verify_cached_record(arguments: dict[str, Any], cache_db: Path) -> dict[str
                 "error": {
                     "code": "VERIFICATION_UNSUPPORTED",
                     "category": "verification_unsupported",
-                    "message": "Real verification requires a jsonl_store record, or live-local mode for qmd.",
+                    "message": "Real verification requires a jsonl_store record, or live-local mode for qmd or vertex_memory_bank (with a configured engine).",
                     "verification_state": "unsupported",
                 },
             }
@@ -664,38 +698,64 @@ def _gbrain_write_through(request: dict[str, Any], arguments: dict[str, Any], st
 
 
 def _vertex_write_through(request: dict[str, Any], arguments: dict[str, Any], store: CacheStore) -> dict[str, Any]:
-    """EN-037: peer memories route to Vertex AI Memory Bank.
+    """EN-037/EN-038: peer memories route to Vertex AI Memory Bank.
 
-    Fixture mode synthesizes the generate receipt shape (stable resource-name
+    Fixture mode synthesizes the create receipt shape (stable resource-name
     pointer + hash-at-observation) disclosed as fixture-only. Live-local
-    degrades honestly until the GCP client boundary is wired with configured
-    credentials — no remote calls are guessed, and content never leaves the
-    machine without explicit operator setup.
+    creates the memory for real through the EN-038 client boundary — but
+    only when the operator has configured an engine; content never leaves
+    the machine without that explicit setup, and missing configuration
+    degrades honestly.
     """
-    if resolve_backend_mode() == "live-local":
-        return {
-            "request_id": request["request_id"],
-            "operation": request["operation"],
-            "status": "error",
-            "results": [],
-            "verification_state": "unknown",
-            "error": {
-                "code": "BACKEND_UNAVAILABLE",
-                "category": "backend_unavailable",
-                "message": "Live Memory Bank calls require configured GCP credentials (EN-037 next inch); fixture mode proves the contract.",
-                "details": {"backend_id": "vertex_memory_bank"},
-            },
-        }
+    from memorycore.vertex_adapter import fact_hash, vertex_pointer
 
     content = arguments["content"]
     timestamp = _timestamp()
-    memory_id = "memory-" + hashlib.sha256(f"{content}{timestamp}".encode()).hexdigest()[:16]
-    from memorycore.vertex_adapter import fact_hash, vertex_pointer
 
-    memory_name = (
-        "projects/fixture-project/locations/us-central1/"
-        f"reasoningEngines/fixture/memories/{memory_id}"
-    )
+    if resolve_backend_mode() == "live-local":
+        from memorycore.vertex_client import VertexClientError, engine_name, live_create_memory
+
+        engine = engine_name(load_config(operator_config_path()))
+        if not engine:
+            return {
+                "request_id": request["request_id"],
+                "operation": request["operation"],
+                "status": "error",
+                "results": [],
+                "verification_state": "unknown",
+                "error": {
+                    "code": "BACKEND_UNAVAILABLE",
+                    "category": "backend_unavailable",
+                    "message": "Live Memory Bank writes need a configured engine: set MEMORYCORE_VERTEX_ENGINE (or backends.vertex_memory_bank.engine in the operator config).",
+                    "details": {"backend_id": "vertex_memory_bank"},
+                },
+            }
+        try:
+            memory = live_create_memory(content, engine=engine)
+        except VertexClientError as exc:
+            return {
+                "request_id": request["request_id"],
+                "operation": request["operation"],
+                "status": "error",
+                "results": [],
+                "verification_state": "unknown",
+                "error": {
+                    "code": "BACKEND_UNAVAILABLE",
+                    "category": "backend_unavailable",
+                    "message": str(exc),
+                    "details": {"backend_id": "vertex_memory_bank"},
+                },
+            }
+        memory_name = memory["name"]
+        write_mode = "live-local"
+    else:
+        memory_id = "memory-" + hashlib.sha256(f"{content}{timestamp}".encode()).hexdigest()[:16]
+        memory_name = (
+            "projects/fixture-project/locations/us-central1/"
+            f"reasoningEngines/fixture/memories/{memory_id}"
+        )
+        write_mode = "fixture-only"
+
     record = cache_write(
         store,
         {
@@ -712,7 +772,7 @@ def _vertex_write_through(request: dict[str, Any], arguments: dict[str, Any], st
     store.upsert(record)
 
     result = _ok_cache_result(request, [_cache_item(record)])
-    return {**result, "selected_backend": "vertex_memory_bank", "write_mode": "fixture-only"}
+    return {**result, "selected_backend": "vertex_memory_bank", "write_mode": write_mode}
 
 
 def _callback_delivery_instruction(request: dict[str, Any], arguments: dict[str, Any], store: CacheStore) -> dict[str, Any]:

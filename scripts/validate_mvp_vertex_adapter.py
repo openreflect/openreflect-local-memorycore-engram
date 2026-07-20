@@ -132,24 +132,32 @@ def main() -> int:
             states = {r["record_id"]: r["flush_state"] for r in flushed["results"]}
             require(states.get(pending["results"][0]["record_id"]) == "flushed", "peer flush ack failed")
 
-            # Live-local degrades honestly until GCP credentials are wired.
+            # Live-local degrades honestly until an engine is configured
+            # (EN-038: enabling the backend alone must not reach the network).
             os.environ["MEMORYCORE_BACKEND_MODE"] = "live-local"
             live = call_tool("memorycore_remember", {"memory_type": "peer", "content": secret}, **kwargs)
             require(live["status"] == "error" and live["error"]["code"] == "BACKEND_UNAVAILABLE",
-                    "live-local must degrade honestly without credentials")
-            require("credentials" in live["error"]["message"], "live refusal must name the missing credentials")
-            del os.environ["MEMORYCORE_BACKEND_MODE"]
+                    "live-local must degrade honestly without an engine")
+            require("MEMORYCORE_VERTEX_ENGINE" in live["error"]["message"],
+                    "live refusal must name the missing engine configuration")
 
-            # Fanout reports an honest vertex lane in both enabled and disabled states.
+            # Fanout lane honesty across states: enabled without an engine
+            # in live-local says why; fixture mode says why; disabled says so.
             fan = call_tool("memorycore_fanout_search", {"query": "peer"}, **kwargs)
             lanes = {lane["lane"]: lane for lane in fan["lanes"]}
-            require(lanes["vertex_memory_bank_search"]["status"] == "unavailable",
-                    "enabled vertex lane must say unavailable, not vanish")
-            require("credentials" in lanes["vertex_memory_bank_search"]["reason"], "lane reason must name credentials")
+            require(lanes["vertex_retrieve"]["status"] == "skipped"
+                    and "engine" in lanes["vertex_retrieve"]["reason"],
+                    "live lane without an engine must say so")
+            del os.environ["MEMORYCORE_BACKEND_MODE"]
+            fan = call_tool("memorycore_fanout_search", {"query": "peer"}, **kwargs)
+            lanes = {lane["lane"]: lane for lane in fan["lanes"]}
+            require(lanes["vertex_retrieve"]["status"] == "skipped"
+                    and "fixture" in lanes["vertex_retrieve"]["reason"],
+                    "fixture-mode vertex lane must say why it did not run")
             handle_control("backend", {"backend_id": "vertex_memory_bank", "enabled": False}, **ctl)
             fan = call_tool("memorycore_fanout_search", {"query": "peer"}, **kwargs)
             lanes = {lane["lane"]: lane for lane in fan["lanes"]}
-            require(lanes["vertex_memory_bank_search"]["status"] == "disabled",
+            require(lanes["vertex_retrieve"]["status"] == "disabled",
                     "disabled vertex lane must be labeled disabled")
 
             # Content-sparse: the fact rode the call only; receipts hold pointers and hashes.

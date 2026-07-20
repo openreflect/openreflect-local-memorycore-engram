@@ -126,11 +126,41 @@ def fanout_search(
 
     run_lane("qmd_index", "qmd", qmd_lane)
 
+    # Lane: Vertex Memory Bank similarity retrieval (EN-038; live-local with
+    # a configured engine only — content never leaves the machine otherwise).
+    def vertex_lane() -> int:
+        if not backend_enabled(config, "vertex_memory_bank"):
+            raise LaneSkipped("disabled by operator", status="disabled")
+        if mode != "live-local":
+            raise LaneSkipped("fixture mode: live retrieval not run", status="skipped")
+        from memorycore.vertex_client import engine_name, live_retrieve_memories
+
+        engine = engine_name(config)
+        if not engine:
+            raise LaneSkipped("no engine configured (MEMORYCORE_VERTEX_ENGINE)", status="skipped")
+        from memorycore.vertex_adapter import normalize_retrieve_result
+
+        out = normalize_retrieve_result(
+            {"request_id": "req_fanout_vertex"},
+            live_retrieve_memories(query, engine=engine, top_k=limit),
+        )
+        for item in out["results"]:
+            record = store.find_by_pointer(item["pointer"]["pointer_id"])
+            add_result("vertex_retrieve", "vertex_memory_bank", item["pointer"],
+                       record_id=record["record_id"] if record else None,
+                       memory_type="peer",
+                       verification_state=record["verification"] if record else "unknown",
+                       source=item.get("source", "generated"),
+                       relevance=item.get("distance"),
+                       snippet=item.get("fact", "")[:160])
+        return len(out["results"])
+
+    run_lane("vertex_retrieve", "vertex_memory_bank", vertex_lane)
+
     # Lanes that cannot answer on this surface say so explicitly.
     for backend_id, reason in (
         ("lossless_claw", "no host bridge on this surface (ADR-0006 callback is write-side)"),
         ("gbrain", "live search not wired yet (EN-035 next inch)"),
-        ("vertex_memory_bank", "live retrieval requires configured GCP credentials (EN-037 next inch)"),
     ):
         status = "disabled" if not backend_enabled(config, backend_id) else "unavailable"
         lanes.append({"lane": f"{backend_id}_search", "backend_id": backend_id,
