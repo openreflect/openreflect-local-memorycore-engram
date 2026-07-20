@@ -33,7 +33,8 @@ activity is distinguishable from other MCP callers after the fact.
 
 Arguments:
 
-- `memory_type` required enum: `file_corpus`, `transcript`
+- `memory_type` required enum: `file_corpus`, `transcript`, `local`,
+  `knowledge`, `peer`
 - `content_ref` string — a pointer to existing content
 - `content` string — new content for transient write-through (ADR-0005);
   one of `content_ref` / `content` is required
@@ -44,8 +45,9 @@ Arguments:
 
 Pointer behavior: the record lands in the cache `pending`, stamped with a
 provenance pointer routed by memory type (`file_corpus` -> `qmd`,
-`transcript` -> `lossless_claw`). Returns the stamped record including its
-stable `record_id`.
+`transcript` -> `lossless_claw`, `local` -> `jsonl_store`,
+`knowledge` -> `gbrain`, `peer` -> `vertex_memory_bank`). Returns the
+stamped record including its stable `record_id`.
 
 Content behavior, `file_corpus` (write-through): the content rides the
 call in process memory only, is materialized into the dedicated QMD write
@@ -63,6 +65,22 @@ gitignored), read back for a proof-based `verified` stamp, and the cache
 keeps the `jsonl://` pointer with `flush_state: "flushed"` and
 `write_mode: "jsonl-local"`. Works in every backend mode; verification of
 `jsonl_store` records is real (hash-based) in every mode too.
+
+Content behavior, `knowledge` (gbrain capture, EN-035): fixture mode
+synthesizes the capture receipt shape (`gbrain://pages/{slug}` pointer +
+content hash) disclosed as `write_mode: "fixture-only"`; live capture
+degrades honestly until the local gbrain CLI boundary is wired.
+
+Content behavior, `peer` (Vertex Memory Bank, EN-037/EN-038): the backend
+ships **disabled** (remote service) and refuses writes with
+`BACKEND_DISABLED` until the operator enables it. Enabled + fixture mode
+synthesizes the create receipt (`fixture-only`). Enabled + `live-local`
+mode with a configured engine (`MEMORYCORE_VERTEX_ENGINE` or
+`backends.vertex_memory_bank.engine`) creates the memory for real and
+receipts the stable resource-name pointer with a hash-at-observation;
+`memorycore_verify` then proves it by read-back (`verified` /
+`stale` when Memory Bank consolidation revised the fact / `missing`).
+See docs/VERTEX_MEMORY_BANK.md for operator setup.
 
 Content behavior, `transcript` (callback, ADR-0006): the record is cached
 with `flush_state: "awaiting_delivery"` and the response carries a

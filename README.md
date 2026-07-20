@@ -38,15 +38,15 @@ Engram does not replace semantic search or summarization. It gives those systems
 
 ┌─────────────────────────────────── CALLERS ───────────────────────────────────┐
 │                                                                               │
-│   OpenClaw sessions            Operator CLI             Any MCP client        │
-│   [GATE] live connect          [LIVE] search, get,      [LIVE] FastMCP        │
-│   surface ready; smoke         verify, health, audit,   stdio / sse /         │
-│   blocked by EVAL-012          eval --public-safe       streamable-http       │
+│   OpenClaw sessions            Operator CLI + console   Any MCP client        │
+│   [LIVE] EVAL-012 smoke        [LIVE] CLI verbs; audited [LIVE] FastMCP       │
+│   passed 2026-07-17; MCP       web console on :8787     stdio / sse /         │
+│   attached customer-zero       (EN-026 control plane)   streamable-http       │
 └──────────────────────────────────────┬────────────────────────────────────────┘
                                        │
-                9 MCP tools / CLI verbs [LIVE]:  search · get · verify ·
-                health · remember · recall · cache_search · flush ·
-                confirm_delivery
+                10 MCP tools / CLI verbs [LIVE]:  search · get · verify ·
+                health · remember · recall · cache_search · fanout_search ·
+                flush · confirm_delivery
                                        │
 ┌──────────────────────────────────────▼────────────────────────────────────────┐
 │                         MEMORYCORE CONTROL PLANE                              │
@@ -63,27 +63,35 @@ Engram does not replace semantic search or summarization. It gives those systems
 │   │ AUDIT LOG [LIVE] content-sparse, client-attributed                    │   │
 │   │ PROVENANCE LEDGER [LIVE] pointer-first records                        │   │
 │   │ VERIFICATION [LIVE] QMD backend-proof (disk+index+hash); verdicts     │   │
-│   │   update cached stamps; LCM describe + TTL re-verification [PLAN]    │   │
+│   │   update cached stamps; LCM describe + TTL re-verification [PLAN]     │   │
 │   └───────────────────────────────────────────────────────────────────────┘   │
 └─────────────┬──────────────────────────┬───────────────────────┬──────────────┘
               │ reads [LIVE]             │ writes [LIVE]         │ [PLAN]
               │ live-local CLI           │ transient content     │
               │ shell-out                │ write-through         │
 ┌─────────────▼───────────┐ ┌────────────▼───────────┐ ┌─────────▼──────────────┐
-│ QMD  [LIVE]             │ │ LCM (Lossless-Claw)    │ │ FUTURE BACKENDS [PLAN] │
-│ local corpus index      │ │ [LIVE] contract        │ │ Honcho (peer memory)   │
-│ reads: live-local       │ │ transcript memory      │ │ gbrain (knowledge)     │
-│ writes: dedicated       │ │ callback delivery      │ │ Notion / Drive / S3    │
-│ memorycore-writes       │ │ built (ADR-0006); live │ │ memory fabric          │
-│ collection              │ │ executor + describe    │ └────────────────────────┘
-│ proven end-to-end       │ │ verify gated: EVAL-012 │
-│ 2026-07-04              │ └────────────────────────┘
-└─────────────────────────┘
+│ QMD  [LIVE]             │ │ LCM (Lossless-Claw)    │ │ VERTEX MEMORY BANK     │
+│ local corpus index:     │ │ [LIVE] contract:       │ │ [LIVE] first remote    │
+│ live reads, writes,     │ │ transcript memory,     │ │ backend: real create / │
+│ real verify; proven     │ │ callback delivery      │ │ retrieve / verify;     │
+│ end-to-end 2026-07-04   │ │ (ADR-0006), executor   │ │ hash-at-observation    │
+│                         │ │ scaffold; describe-    │ │ caught a live server-  │
+│ JSONL STORE [LIVE]      │ │ verify next            │ │ side revision as       │
+│ zero-dep local file,    │ └────────────────────────┘ │ stale, 2026-07-20      │
+│ hash-verified in        │ ┌────────────────────────┐ │                        │
+│ every mode              │ │ GBRAIN [FIXTURE]       │ │ DECLARED, disabled:    │
+└─────────────────────────┘ │ capture contract with  │ │ AgentCore Memory,      │
+                            │ slug + hash receipts;  │ │ mem0, Zep, Letta,      │
+                            │ live capture next      │ │ Honcho — visible in    │
+                            └────────────────────────┘ │ console, off until     │
+                                                       │ configured (EN-036)    │
+                                                       └────────────────────────┘
 
 ┌───────────────────────────── EVALUATION HARNESS ──────────────────────────────┐
-│ [LIVE] 20 deterministic public-safe validators, CI green on every push        │
-│ [LIVE] local-only live evals (QMD real index, LCM synthetic store)            │
-│ [GATE] EVAL-012 OpenClaw integration smoke -> unlocks the final MVP verdict   │
+│ [LIVE] 26 deterministic public-safe validators, CI green on every push        │
+│ [LIVE] local-only evals: QMD live index, LCM store, Steel console E2E,        │
+│        Vertex Memory Bank live loop                                           │
+│ [DONE] EVAL-012 OpenClaw smoke passed 2026-07-17 -> MVP verdict: COMPLETE     │
 └────────────────────────────────────────────────────────────────────────────────┘
 
 Proven loops on the real local index:
@@ -93,10 +101,17 @@ Proven loops on the real local index:
 - Verify (2026-07-05): a memory whose source file was deleted honestly flipped
   to "missing" (despite index lag); a modified source flips to "stale"; the
   intact one re-proved "verified" — verdicts persist to the cached stamps.
+- Smoke (2026-07-17): a live OpenClaw agent drove the MCP surface end to end
+  (EVAL-012, glasshouse); audits corroborated — the MVP verdict is COMPLETE.
+- Fanout (2026-07-19): one query merged cache + JSONL + live QMD lanes with
+  per-item attribution and cross-lane corroboration (EN-021 merge contract).
+- Remote (2026-07-20): Vertex AI Memory Bank live — a real create earned
+  "verified" by read-back, a server-side fact revision was caught as "stale",
+  and the live similarity lane merged into fanout with attribution (EN-038).
 
-Remaining before the MVP verdict: the OpenClaw-side delivery executor and
-LCM describe-verify (both exercised live only after the EVAL-012 hard stop is
-lifted), plus operational hardening (WAL, request ids, idempotency, retry).
+MVP complete (2026-07-17). Current focus: the remote-backend campaign
+(EN-036 landscape, AgentCore next), governance composition (OG track), and
+the hardening batch (WAL, request ids, idempotency, flush retry).
 ```
 
 ## What OpenReflect-Local-MemoryCore-Engram manages
@@ -211,23 +226,26 @@ ENGRAM / MEMORYCORE
 │   ├── [✔] Mock backend + fixtures
 │   ├── [✔] Caching memory router + OpenClaw cache API (remember/recall/flush)
 │   ├── [✔] QMD adapter (live reads, transient write-through, real verify)
-│   ├── [◐] Lossless-Claw (LCM) adapter (callback contract built; live executor gated)
+│   ├── [◐] Lossless-Claw (LCM) adapter (callback contract built; executor scaffold)
 │   ├── [○] Backend control ops (register, doctor, reindex, observe-only)
 │   ├── [○] Mirroring & splitting policies (one event → many backends)
 │   ├── [○] Honcho adapter (peer/session reasoning)
 │   ├── [◐] Gated write & import adapters (QMD write-through + LCM callback built)
-│   ├── [·] gbrain adapter (knowledge-brain pages)
-│   └── [·] Backend classes taxonomy (corpus / transcript / peer / brain / fabric)
+│   ├── [✔] gbrain adapter (knowledge pages; capture contract, slug+hash receipts)
+│   ├── [✔] Backend classes taxonomy (corpus / transcript / peer / brain / fabric)
+│   ├── [✔] Vertex Memory Bank adapter (live remote; hash-at-observation verify)
+│   ├── [✔] Attributed multi-backend fanout (merge contract v1, lane honesty)
+│   └── [✔] Declared-by-default memory landscape (6 services visible, off)
 │
 ├── 4. INTERFACES
 │   ├── [✔] CLI (search, get, verify, health, audit, backends)
 │   ├── [✔] Consolidated eval command (memorycore eval --public-safe)
 │   ├── [✔] MCP tool surface + real FastMCP server (stdio/sse/http)
-│   ├── [◐] OpenClaw integration (gated behind EVAL-012 hard stop)
+│   ├── [✔] OpenClaw integration (EVAL-012 smoke passed; MCP customer-zero)
 │   ├── [○] Production MCP handoff (session ids, cancellation, packaging)
 │   ├── [○] Full CLI verbs (init, ingest, index, recall, context, doctor…)
 │   ├── [○] HTTP/REST API + SDK primitives
-│   ├── [○] Operator UI (summary-DAG viewer, provenance drilldown, doctor)
+│   ├── [✔] Operator console (receipts, audited controls, reveal + hash proof)
 │   ├── [○] Hermes / Codex / desktop-app plugin paths
 │   └── [·] Nontraditional substrates (Notion, Drive, S3, spreadsheets…)
 │
@@ -238,12 +256,12 @@ ENGRAM / MEMORYCORE
 │   └── [○] Insight-plugin lane (scoped mining jobs, privacy gates)
 │
 ├── 6. EVALUATION & VALIDATION
-│   ├── [✔] 20 deterministic public-safe validators + consolidated runner
+│   ├── [✔] 26 deterministic public-safe validators + consolidated runner
 │   ├── [✔] Fixture corpus (8 families) + CI on every push
 │   ├── [✔] Parallel agent work packets (PACKET-01…10)
-│   ├── [◐] E2E golden path (CLI+MCP pass; OpenClaw leg blocked)
-│   ├── [◐] Local-only live evals (QMD, LCM; skipped in public runs)
-│   ├── [○] EVAL-012 OpenClaw smoke (planned, hard-stopped, template ready)
+│   ├── [✔] E2E golden path (CLI + MCP + OpenClaw smoke)
+│   ├── [◐] Local-only live evals (QMD, LCM, console E2E, Vertex; public-skipped)
+│   ├── [✔] EVAL-012 OpenClaw smoke (passed 2026-07-17, glasshouse)
 │   └── [○] pytest bridge
 │
 ├── 7. OBSERVABILITY & OPS
