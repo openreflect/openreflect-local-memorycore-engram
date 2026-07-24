@@ -1,7 +1,7 @@
 # OpenReflect as the Memory Company for AI
 
-**Captured:** 2026-07-24  
-**Status:** Strategic thesis to investigate  
+**Captured:** 2026-07-24
+**Status:** Strategic thesis to investigate
 **Category:** Company positioning · product portfolio · research · public writing
 
 ## Core thesis
